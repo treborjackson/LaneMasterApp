@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  name         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  preferences  UserPreferences?
+  games        GameSession[]
+  ballNotes    BallNote[]
+  formAnalyses FormAnalysis[]
+
+  @@map("users")
+}
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bowlingStyle   String @default("onehand")
+  skillLevel     String @default("beginner")
+  favoriteBrands String @default("[]")
+  selectedBall   String?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+model GameSession {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  datePlayed DateTime @default(now())
+  totalScore Int      @default(0)
+  ballUsed   String?
+  laneNumber Int?
+  oilPattern String?
+
+  frames String @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("game_sessions")
+}
+
+model BallNote {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ballName  String
+  brand     String
+  rating    Int      @default(0)
+  notes     String   @default("")
+  dateAdded DateTime @default(now())
+
+  @@unique([userId, ballName])
+  @@map("ball_notes")
+}
+
+model FormAnalysis {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  analysisType String
+  proCompared  String?
+  score        Int    @default(0)
+  resultJson   String @default("{}")
+
+  createdAt DateTime @default(now())
+
+  @@map("form_analyses")
+}
