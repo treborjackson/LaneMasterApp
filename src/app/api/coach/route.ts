@@ -3,6 +3,13 @@ import { anthropic } from '@/lib/anthropic';
 import { verifyToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(
+      { reply: "AI coaching isn't set up yet — add your ANTHROPIC_API_KEY to .env.local to enable this feature." },
+      { status: 200 }
+    );
+  }
+
   const userId = verifyToken(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

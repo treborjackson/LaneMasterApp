@@ -21,6 +21,7 @@ export function FormAnalyzerScreen() {
   const [imageBase64, setImageBase64]   = useState<string | null>(null);
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState<SoloFormResult | CompareFormResult | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -39,6 +40,7 @@ export function FormAnalyzerScreen() {
   async function analyze() {
     if (!imageBase64 || !token) return;
     setLoading(true);
+    setApiError(null);
     try {
       const res = await apiAnalyzeForm(token, {
         imageBase64,
@@ -47,8 +49,8 @@ export function FormAnalyzerScreen() {
         ball:        selectedBall,
       });
       setResult(res);
-    } catch (e) {
-      console.error(e);
+    } catch (e: unknown) {
+      setApiError(e instanceof Error ? e.message : 'Analysis failed');
     } finally {
       setLoading(false);
     }
@@ -105,6 +107,12 @@ export function FormAnalyzerScreen() {
 
         {!token && (
           <p className="text-xs text-center" style={{ color: 'var(--text-faint)' }}>Log in to use AI form analysis</p>
+        )}
+
+        {apiError && (
+          <div className="rounded-lg p-3 border" style={{ borderColor: 'var(--red)', background: 'var(--bg-muted)' }}>
+            <p className="text-xs" style={{ color: 'var(--red)' }}>⚠️ {apiError}</p>
+          </div>
         )}
 
         {/* Results */}
