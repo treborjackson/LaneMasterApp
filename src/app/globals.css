@@ -1,46 +1,44 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Lane Master wood theme colors */
-  --color-lane-bg:     #1c1006;
-  --color-lane-deep:   #140d04;
-  --color-lane-card:   #2e1e0a;
-  --color-lane-muted:  #261508;
-  --color-lane-light:  #f0d89a;
-  --color-lane-mid:    #d4a853;
-  --color-lane-dark:   #a0722a;
-  --color-lane-deep2:  #6b4c1e;
-  --color-lane-border: #4a3018;
-  --color-lane-ink:    #3a2510;
+  --color-lane-bg:     #2e1e0e;
+  --color-lane-deep:   #241508;
+  --color-lane-card:   #3d2a12;
+  --color-lane-muted:  #341f0c;
+  --color-lane-light:  #f5e6b8;
+  --color-lane-mid:    #dbb86a;
+  --color-lane-dark:   #b08040;
+  --color-lane-deep2:  #7d5c2a;
+  --color-lane-border: #5c3d20;
+  --color-lane-ink:    #4a2e14;
   --color-accent:      #e8a020;
   --color-strike:      #c0392b;
   --color-spare:       #2e6da4;
 
-  /* Fonts */
   --font-display: "Playfair Display", serif;
   --font-body:    "Nunito", sans-serif;
 }
 
 :root {
-  --bg:          #1c1006;
-  --bg-deep:     #140d04;
-  --bg-card:     #2e1e0a;
-  --bg-muted:    #261508;
-  --brown-1:     #f0d89a;
-  --brown-2:     #d4a853;
-  --brown-3:     #a0722a;
-  --brown-4:     #6b4c1e;
-  --brown-5:     #4a3018;
-  --brown-6:     #3a2510;
-  --accent:      #e8a020;
-  --accent-lt:   #f0d89a;
-  --gold:        #e8a020;
-  --red:         #c0392b;
-  --blue:        #2e6da4;
-  --text-primary: #f5ede0;
-  --text-muted:   #c4a06a;
-  --text-faint:   #8a6a3a;
-  --border:      #4a3018;
+  --bg:           #2e1e0e;
+  --bg-deep:      #241508;
+  --bg-card:      #3d2a12;
+  --bg-muted:     #341f0c;
+  --brown-1:      #f5e6b8;
+  --brown-2:      #dbb86a;
+  --brown-3:      #b08040;
+  --brown-4:      #7d5c2a;
+  --brown-5:      #5c3d20;
+  --brown-6:      #4a2e14;
+  --accent:       #e8a020;
+  --accent-lt:    #f5e6b8;
+  --gold:         #e8a020;
+  --red:          #c0392b;
+  --blue:         #2e6da4;
+  --text-primary: #faf2e4;
+  --text-muted:   #d4aa72;
+  --text-faint:   #9a7248;
+  --border:       #5c3d20;
 }
 
 * {
