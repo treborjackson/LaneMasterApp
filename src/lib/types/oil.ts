@@ -6,3 +6,13 @@ export interface OilPattern {
   tip:         string;
   ratio:       string;
 }
+
+export interface OilPatternDetail {
+  name:                string;
+  ballRecommendations: string[];
+  lineToPlay:          string;
+  adjustments:         string[];
+  commonMistakes:      string[];
+  proTips:             string[];
+  bestFor:             string;
+}
