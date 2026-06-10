@@ -24,14 +24,14 @@ export function AppShell() {
   const { activeTab } = useAppStore();
 
   return (
-    <div className="flex justify-center items-start min-h-screen" style={{ background: '#0a0704' }}>
+    <div className="flex justify-center items-start h-[100dvh]" style={{ background: '#0a0704' }}>
       <div
-        className="relative flex flex-col w-full max-w-[430px] min-h-screen overflow-hidden shadow-2xl"
+        className="relative flex flex-col w-full max-w-[430px] h-[100dvh] overflow-hidden shadow-2xl"
         style={{ background: 'var(--bg)' }}
       >
         <StatusBar />
         <TopNav />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overscroll-contain">
           {SCREENS[activeTab] ?? SCREENS.picker}
         </main>
         <BottomTabBar />
