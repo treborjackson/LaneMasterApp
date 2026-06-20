@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/appStore';
 const TABS = [
   { id: 'picker',   label: 'Balls',    emoji: '🎳' },
   { id: 'oil',      label: 'Oil',      emoji: '🛢️' },
+  { id: 'surface',  label: 'Surface',  emoji: '🧽' },
   { id: 'coach',    label: 'Coach',    emoji: '🧑‍🏫' },
   { id: 'form',     label: 'Form',     emoji: '📸' },
   { id: 'score',    label: 'Score',    emoji: '📊' },
