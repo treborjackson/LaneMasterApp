@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { BALLS, BRANDS } from '@/lib/constants/balls';
 import { BALL_REVIEWS } from '@/lib/constants/ballReviews';
@@ -11,6 +11,42 @@ import { VideoModal } from '@/components/ui/VideoModal';
 import type { Ball } from '@/lib/types/ball';
 
 const SKILL_LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'] as const;
+
+interface BallOfWeek {
+  ballName:  string;
+  brand:     string;
+  reasoning: string;
+  sources:   string[];
+}
+
+function BallOfWeekCard() {
+  const [pick, setPick] = useState<BallOfWeek | null>(null);
+
+  useEffect(() => {
+    fetch('/api/ball-of-week')
+      .then((r) => r.json())
+      .then((data) => { if (data?.ballName) setPick(data); })
+      .catch(() => {});
+  }, []);
+
+  if (!pick) return null;
+
+  return (
+    <div className="px-4 mb-4">
+      <WoodCard style={{ borderColor: 'var(--accent)' }}>
+        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--accent)' }}>
+          🏆 Ball of the Week
+        </p>
+        <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+          {pick.ballName} <span style={{ color: 'var(--text-muted)' }}>· {pick.brand}</span>
+        </h3>
+        <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+          {pick.reasoning}
+        </p>
+      </WoodCard>
+    </div>
+  );
+}
 
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -48,6 +84,8 @@ export function BallPickerScreen() {
   return (
     <div className="pb-4">
       <PageHeader title="Ball Picker" subtitle="Find your perfect ball" emoji="🎳" />
+
+      <BallOfWeekCard />
 
       {/* Brand filter */}
       <div className="px-4 mb-3">
