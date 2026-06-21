@@ -74,15 +74,13 @@ model BallNote {
   @@map("ball_notes")
 }
 
-model BallOfWeek {
+model BallsOfMonth {
   id        String   @id @default(cuid())
-  ballName  String
-  brand     String
-  reasoning String
+  picks     String   @default("[]")
   sources   String   @default("[]")
   createdAt DateTime @default(now())
 
-  @@map("ball_of_week")
+  @@map("balls_of_month")
 }
 
 model FormAnalysis {

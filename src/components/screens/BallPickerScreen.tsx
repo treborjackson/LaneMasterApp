@@ -12,37 +12,47 @@ import type { Ball } from '@/lib/types/ball';
 
 const SKILL_LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'] as const;
 
-interface BallOfWeek {
+interface MonthPick {
   ballName:  string;
   brand:     string;
   reasoning: string;
-  sources:   string[];
 }
 
-function BallOfWeekCard() {
-  const [pick, setPick] = useState<BallOfWeek | null>(null);
+function BallsOfMonthCard() {
+  const [picks, setPicks] = useState<MonthPick[] | null>(null);
 
   useEffect(() => {
-    fetch('/api/ball-of-week')
+    fetch('/api/balls-of-month')
       .then((r) => r.json())
-      .then((data) => { if (data?.ballName) setPick(data); })
+      .then((data) => { if (Array.isArray(data?.picks)) setPicks(data.picks); })
       .catch(() => {});
   }, []);
 
-  if (!pick) return null;
+  if (!picks || picks.length === 0) return null;
 
   return (
     <div className="px-4 mb-4">
       <WoodCard style={{ borderColor: 'var(--accent)' }}>
-        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--accent)' }}>
-          🏆 Ball of the Week
+        <p className="text-xs font-semibold mb-2" style={{ color: 'var(--accent)' }}>
+          🏆 Top 5 Balls of the Month
         </p>
-        <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-          {pick.ballName} <span style={{ color: 'var(--text-muted)' }}>· {pick.brand}</span>
-        </h3>
-        <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          {pick.reasoning}
-        </p>
+        <div className="space-y-2.5">
+          {picks.map((pick, i) => (
+            <div key={i} className="flex gap-2">
+              <span className="text-xs font-bold flex-shrink-0" style={{ color: 'var(--accent)' }}>
+                {i + 1}.
+              </span>
+              <div>
+                <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {pick.ballName} <span style={{ color: 'var(--text-muted)' }}>· {pick.brand}</span>
+                </h4>
+                <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                  {pick.reasoning}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </WoodCard>
     </div>
   );
@@ -85,7 +95,7 @@ export function BallPickerScreen() {
     <div className="pb-4">
       <PageHeader title="Ball Picker" subtitle="Find your perfect ball" emoji="🎳" />
 
-      <BallOfWeekCard />
+      <BallsOfMonthCard />
 
       {/* Brand filter */}
       <div className="px-4 mb-3">
