@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { OIL_PATTERNS, OIL_PATTERN_DETAILS } from '@/lib/constants/oilPatterns';
+import { SURFACE_PROFILES } from '@/lib/constants/surfaces';
 import { WoodCard } from '@/components/ui/WoodCard';
 import { WoodPill } from '@/components/ui/WoodPill';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -16,11 +17,12 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Sport:  '#8e44ad',
 };
 
-type Section = 'overview' | 'line' | 'adjustments' | 'mistakes' | 'tips';
+type Section = 'overview' | 'line' | 'surface' | 'adjustments' | 'mistakes' | 'tips';
 
 const SECTIONS: { id: Section; label: string; emoji: string }[] = [
   { id: 'overview',     label: 'Overview',    emoji: '📋' },
   { id: 'line',         label: 'Line',         emoji: '🎯' },
+  { id: 'surface',      label: 'Surface',      emoji: '🧽' },
   { id: 'adjustments',  label: 'Adjustments',  emoji: '🔧' },
   { id: 'mistakes',     label: 'Mistakes',     emoji: '⚠️' },
   { id: 'tips',         label: 'Pro Tips',     emoji: '🏆' },
@@ -90,9 +92,10 @@ export function OilPatternScreen() {
         )}
 
         {filtered.map((pattern) => {
-          const isOpen  = expanded === pattern.name;
-          const color   = DIFFICULTY_COLORS[pattern.difficulty];
-          const detail  = OIL_PATTERN_DETAILS[pattern.name];
+          const isOpen   = expanded === pattern.name;
+          const color    = DIFFICULTY_COLORS[pattern.difficulty];
+          const detail   = OIL_PATTERN_DETAILS[pattern.name];
+          const surfaces = SURFACE_PROFILES.filter((s) => s.bestOilPatterns.includes(pattern.name));
 
           return (
             <WoodCard key={pattern.name} onClick={() => togglePattern(pattern.name)}>
@@ -216,6 +219,40 @@ export function OilPatternScreen() {
                           <span>Center →</span>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Surface */}
+                  {section === 'surface' && (
+                    <div className="mt-3 space-y-3">
+                      {surfaces.length === 0 && (
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          No specific surface match on file for this pattern yet — check the Ball
+                          Recommendations in Overview for grit guidance.
+                        </p>
+                      )}
+                      {surfaces.map((s) => (
+                        <div key={s.id} className="rounded-lg p-3" style={{ background: 'var(--bg-muted)' }}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0"
+                              style={{ background: s.color }}
+                            >
+                              {s.emoji}
+                            </span>
+                            <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                              {s.name}
+                            </p>
+                          </div>
+                          <p className="text-xs mb-1.5" style={{ color: 'var(--text-faint)' }}>{s.grit}</p>
+                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                            {s.description}
+                          </p>
+                          <p className="text-xs mt-1.5" style={{ color: 'var(--accent)' }}>
+                            📈 {s.motion}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   )}
 
