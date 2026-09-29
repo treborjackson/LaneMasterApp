@@ -1,14 +1,76 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { useAppStore } from '@/store/appStore';
 
-export default function LoginPage() {
-  const [view, setView]   = useState<'login' | 'signup'>('login');
-  const { setActiveTab }  = useAppStore();
+function LoginContent() {
+  const params        = useSearchParams();
+  const inviteToken   = params.get('invite') ?? undefined;
+  const inviteEmail   = params.get('email') ?? undefined;
+  const [view, setView] = useState<'login' | 'signup'>(inviteToken ? 'signup' : 'login');
+  const { setActiveTab } = useAppStore();
 
+  useEffect(() => {
+    if (inviteToken) setView('signup');
+  }, [inviteToken]);
+
+  return (
+    <>
+      {inviteToken && (
+        <div
+          className="mb-4 px-3 py-2 rounded-lg text-xs text-center"
+          style={{ background: 'var(--bg-muted)', color: 'var(--accent)' }}
+        >
+          🎳 You have an invite — create your account below
+        </div>
+      )}
+
+      {/* Tab switcher */}
+      <div className="flex rounded-xl overflow-hidden border mb-6" style={{ borderColor: 'var(--border)' }}>
+        {(['login', 'signup'] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className="flex-1 py-2.5 text-sm font-semibold transition-colors"
+            style={{
+              background: view === v ? 'var(--accent)' : 'var(--bg-card)',
+              color:      view === v ? 'var(--bg-deep)' : 'var(--text-muted)',
+            }}
+          >
+            {v === 'login' ? 'Log In' : 'Sign Up'}
+          </button>
+        ))}
+      </div>
+
+      {view === 'login' ? (
+        <LoginForm
+          onSuccess={() => setActiveTab('picker')}
+          onSignup={() => setView('signup')}
+        />
+      ) : (
+        <SignupForm
+          onSuccess={() => setActiveTab('picker')}
+          onLogin={() => setView('login')}
+          inviteToken={inviteToken}
+          inviteEmail={inviteEmail}
+        />
+      )}
+
+      <button
+        onClick={() => setActiveTab('picker')}
+        className="mt-6 text-xs text-center"
+        style={{ color: 'var(--text-faint)' }}
+      >
+        Continue without account →
+      </button>
+    </>
+  );
+}
+
+export default function LoginPage() {
   return (
     <div className="flex justify-center items-start min-h-screen" style={{ background: '#0a0704' }}>
       <div
@@ -29,42 +91,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex rounded-xl overflow-hidden border mb-6" style={{ borderColor: 'var(--border)' }}>
-          {(['login', 'signup'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className="flex-1 py-2.5 text-sm font-semibold transition-colors"
-              style={{
-                background: view === v ? 'var(--accent)' : 'var(--bg-card)',
-                color:      view === v ? 'var(--bg-deep)' : 'var(--text-muted)',
-              }}
-            >
-              {v === 'login' ? 'Log In' : 'Sign Up'}
-            </button>
-          ))}
-        </div>
-
-        {view === 'login' ? (
-          <LoginForm
-            onSuccess={() => setActiveTab('picker')}
-            onSignup={() => setView('signup')}
-          />
-        ) : (
-          <SignupForm
-            onSuccess={() => setActiveTab('picker')}
-            onLogin={() => setView('login')}
-          />
-        )}
-
-        <button
-          onClick={() => setActiveTab('picker')}
-          className="mt-6 text-xs text-center"
-          style={{ color: 'var(--text-faint)' }}
-        >
-          Continue without account →
-        </button>
+        <Suspense fallback={null}>
+          <LoginContent />
+        </Suspense>
       </div>
     </div>
   );

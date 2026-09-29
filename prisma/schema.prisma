@@ -83,6 +83,18 @@ model BallsOfMonth {
   @@map("balls_of_month")
 }
 
+model Invite {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  status    String   @default("pending")
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+
+  @@map("invites")
+}
+
 model FormAnalysis {
   id     String @id @default(cuid())
   userId String

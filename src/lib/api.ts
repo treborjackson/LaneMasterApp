@@ -7,11 +7,36 @@ function getHeaders(token: string | null) {
   };
 }
 
-export async function apiRegister(email: string, password: string, name?: string) {
+export async function apiRegister(email: string, password: string, name?: string, inviteToken?: string) {
   const res = await fetch(`${BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify({ email, password, name, inviteToken }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
+export async function apiGetInvites(token: string) {
+  const res = await fetch(`${BASE}/admin/invites`, { headers: getHeaders(token) });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
+export async function apiSendInvite(token: string, email: string) {
+  const res = await fetch(`${BASE}/admin/invites`, {
+    method: 'POST',
+    headers: getHeaders(token),
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+}
+
+export async function apiRevokeInvite(token: string, id: string) {
+  const res = await fetch(`${BASE}/admin/invites/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error((await res.json()).error);
   return res.json();

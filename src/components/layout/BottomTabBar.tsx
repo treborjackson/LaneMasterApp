@@ -2,17 +2,23 @@
 
 import { useAppStore } from '@/store/appStore';
 
-const TABS = [
-  { id: 'picker',   label: 'Balls',    emoji: '🎳' },
-  { id: 'oil',      label: 'Oil',      emoji: '🛢️' },
-  { id: 'coach',    label: 'Coach',    emoji: '🧑‍🏫' },
-  { id: 'form',     label: 'Form',     emoji: '📸' },
-  { id: 'score',    label: 'Score',    emoji: '📊' },
-  { id: 'history',  label: 'History',  emoji: '📜' },
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? '';
+
+const BASE_TABS = [
+  { id: 'picker',  label: 'Balls',   emoji: '🎳'  },
+  { id: 'oil',     label: 'Oil',     emoji: '🛢️'  },
+  { id: 'coach',   label: 'Coach',   emoji: '🧑‍🏫' },
+  { id: 'form',    label: 'Form',    emoji: '📸'  },
+  { id: 'score',   label: 'Score',   emoji: '📊'  },
+  { id: 'history', label: 'History', emoji: '📜'  },
 ];
 
+const ADMIN_TAB = { id: 'admin', label: 'Admin', emoji: '🔐' };
+
 export function BottomTabBar() {
-  const { activeTab, setActiveTab } = useAppStore();
+  const { activeTab, setActiveTab, user } = useAppStore();
+  const isAdmin = !!ADMIN_EMAIL && user?.email === ADMIN_EMAIL;
+  const tabs    = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
 
   return (
     <nav
@@ -23,7 +29,7 @@ export function BottomTabBar() {
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = activeTab === tab.id;
         return (
           <button

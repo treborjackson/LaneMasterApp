@@ -12,8 +12,8 @@ export function useAuth() {
     return data;
   }
 
-  async function signup(email: string, password: string, name?: string) {
-    const data = await apiRegister(email, password, name);
+  async function signup(email: string, password: string, name?: string, inviteToken?: string) {
+    const data = await apiRegister(email, password, name, inviteToken);
     setAuth(data.token, data.user);
     return data;
   }

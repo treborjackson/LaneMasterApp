@@ -10,6 +10,7 @@ import { CoachScreen } from '@/components/screens/CoachScreen';
 import { FormAnalyzerScreen } from '@/components/screens/FormAnalyzerScreen';
 import { ScoreScreen } from '@/components/screens/ScoreScreen';
 import { HistoryScreen } from '@/components/screens/HistoryScreen';
+import { AdminScreen } from '@/components/screens/AdminScreen';
 
 const SCREENS: Record<string, React.ReactNode> = {
   picker:  <BallPickerScreen />,
@@ -18,6 +19,7 @@ const SCREENS: Record<string, React.ReactNode> = {
   form:    <FormAnalyzerScreen />,
   score:   <ScoreScreen />,
   history: <HistoryScreen />,
+  admin:   <AdminScreen />,
 };
 
 export function AppShell() {
