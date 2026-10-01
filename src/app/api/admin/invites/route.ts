@@ -48,7 +48,10 @@ export async function POST(req: NextRequest) {
   const inviteUrl = `${appUrl}/auth/login?invite=${token}&email=${encodeURIComponent(email)}`;
   const loginUrl  = `${appUrl}/auth/login`;
 
-  await sendInviteEmail(email, inviteUrl, loginUrl).catch(() => {});
+  let emailError: string | null = null;
+  await sendInviteEmail(email, inviteUrl, loginUrl).catch((err) => {
+    emailError = err?.message ?? 'Email failed to send';
+  });
 
-  return NextResponse.json({ invite, inviteUrl });
+  return NextResponse.json({ invite, inviteUrl, emailError });
 }

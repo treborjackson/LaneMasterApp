@@ -18,7 +18,6 @@ interface Invite {
 const STATUS_COLORS: Record<string, string> = {
   pending:  'var(--accent)',
   accepted: 'var(--blue)',
-  revoked:  'var(--red)',
 };
 
 export function AdminScreen() {
@@ -56,10 +55,13 @@ export function AdminScreen() {
     try {
       const data = await apiSendInvite(token, email.trim());
       setLastLink(data.inviteUrl ?? '');
-      const emailSent = process.env.NEXT_PUBLIC_RESEND_CONFIGURED === 'true';
-      setSuccess(emailSent
-        ? `Invite sent to ${email.trim()}`
-        : `Invite created — copy the link below to share`);
+      if (data.emailError) {
+        setSuccess(`Invite created — copy the link below (email failed: ${data.emailError})`);
+      } else if (data.inviteUrl && !process.env.NEXT_PUBLIC_RESEND_CONFIGURED) {
+        setSuccess(`Invite created — copy the link below to share`);
+      } else {
+        setSuccess(`Invite sent to ${email.trim()}`);
+      }
       setEmail('');
       await load();
     } catch (err: unknown) {
@@ -81,7 +83,6 @@ export function AdminScreen() {
 
   const pending  = invites.filter((i) => i.status === 'pending');
   const accepted = invites.filter((i) => i.status === 'accepted');
-  const revoked  = invites.filter((i) => i.status === 'revoked');
 
   return (
     <div className="pb-4">
@@ -142,7 +143,6 @@ export function AdminScreen() {
         {[
           { label: 'Pending',  count: pending.length,  color: 'var(--accent)' },
           { label: 'Accepted', count: accepted.length, color: 'var(--blue)'   },
-          { label: 'Revoked',  count: revoked.length,  color: 'var(--red)'    },
         ].map((s) => (
           <div key={s.label} className="flex-1 rounded-lg p-3 text-center" style={{ background: 'var(--bg-card)' }}>
             <p className="text-lg font-bold" style={{ color: s.color }}>{s.count}</p>

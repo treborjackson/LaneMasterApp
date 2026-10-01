@@ -19,6 +19,6 @@ export async function DELETE(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   const { id } = await params;
-  await prisma.invite.update({ where: { id }, data: { status: 'revoked' } });
+  await prisma.invite.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

@@ -1,12 +1,13 @@
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const FROM   = process.env.RESEND_FROM_EMAIL ?? 'Lane Master <onboarding@resend.dev>';
 
 export async function sendInviteEmail(to: string, inviteUrl: string, loginUrl: string): Promise<void> {
   if (!resend) return;
 
   await resend.emails.send({
-    from:    'Lane Master <onboarding@resend.dev>',
+    from: FROM,
     to,
     subject: 'Welcome to Lane Master!',
     html: `
