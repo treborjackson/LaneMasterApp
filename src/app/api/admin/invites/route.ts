@@ -44,10 +44,11 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const invite    = await prisma.invite.create({ data: { email, token, expiresAt } });
 
-  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? '';
   const inviteUrl = `${appUrl}/auth/login?invite=${token}&email=${encodeURIComponent(email)}`;
+  const loginUrl  = `${appUrl}/auth/login`;
 
-  await sendInviteEmail(email, inviteUrl).catch(() => {});
+  await sendInviteEmail(email, inviteUrl, loginUrl).catch(() => {});
 
   return NextResponse.json({ invite, inviteUrl });
 }
