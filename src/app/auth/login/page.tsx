@@ -1,17 +1,23 @@
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { useAppStore } from '@/store/appStore';
 
 function LoginContent() {
   const params        = useSearchParams();
+  const router        = useRouter();
   const inviteToken   = params.get('invite') ?? undefined;
   const inviteEmail   = params.get('email') ?? undefined;
   const [view, setView] = useState<'login' | 'signup'>(inviteToken ? 'signup' : 'login');
   const { setActiveTab } = useAppStore();
+
+  function handleSuccess() {
+    setActiveTab('picker');
+    router.push('/');
+  }
 
   useEffect(() => {
     if (inviteToken) setView('signup');
@@ -47,12 +53,12 @@ function LoginContent() {
 
       {view === 'login' ? (
         <LoginForm
-          onSuccess={() => setActiveTab('picker')}
+          onSuccess={handleSuccess}
           onSignup={() => setView('signup')}
         />
       ) : (
         <SignupForm
-          onSuccess={() => setActiveTab('picker')}
+          onSuccess={handleSuccess}
           onLogin={() => setView('login')}
           inviteToken={inviteToken}
           inviteEmail={inviteEmail}
