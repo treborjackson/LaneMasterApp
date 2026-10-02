@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 interface Invite {
   id:        string;
   email:     string;
+  token:     string;
   status:    string;
   expiresAt: string;
   createdAt: string;
@@ -162,7 +163,9 @@ export function AdminScreen() {
           </p>
         )}
         {invites.filter((i) => i.status !== 'revoked').map((invite) => {
-          const expired = invite.status === 'pending' && new Date(invite.expiresAt) < new Date();
+          const expired  = invite.status === 'pending' && new Date(invite.expiresAt) < new Date();
+          const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? '';
+          const inviteUrl = `${appUrl}/auth/login?invite=${invite.token}&email=${encodeURIComponent(invite.email)}`;
           return (
             <WoodCard key={invite.id}>
               <div className="flex items-center justify-between gap-2">
@@ -184,13 +187,23 @@ export function AdminScreen() {
                     {expired ? 'Expired' : invite.status}
                   </span>
                   {invite.status === 'pending' && (
-                    <button
-                      onClick={() => handleRevoke(invite.id)}
-                      className="text-[10px] px-2 py-1 rounded"
-                      style={{ background: 'var(--bg-muted)', color: 'var(--red)' }}
-                    >
-                      Revoke
-                    </button>
+                    <>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(inviteUrl).catch(() => {})}
+                        className="text-[10px] px-2 py-1 rounded"
+                        style={{ background: 'var(--bg-muted)', color: 'var(--accent)' }}
+                        title="Copy invite link"
+                      >
+                        Copy Link
+                      </button>
+                      <button
+                        onClick={() => handleRevoke(invite.id)}
+                        className="text-[10px] px-2 py-1 rounded"
+                        style={{ background: 'var(--bg-muted)', color: 'var(--red)' }}
+                      >
+                        Remove
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
