@@ -161,7 +161,7 @@ export function AdminScreen() {
             No invites yet — send one above
           </p>
         )}
-        {invites.map((invite) => {
+        {invites.filter((i) => i.status !== 'revoked').map((invite) => {
           const expired = invite.status === 'pending' && new Date(invite.expiresAt) < new Date();
           return (
             <WoodCard key={invite.id}>
