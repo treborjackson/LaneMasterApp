@@ -33,6 +33,7 @@ model UserPreferences {
   bowlingStyle   String @default("onehand")
   skillLevel     String @default("beginner")
   handedness     String @default("right")
+  goals          String @default("[]")
   favoriteBrands String @default("[]")
   selectedBall   String?
 

@@ -13,9 +13,11 @@ interface AppState {
   bowlingStyle:    BowlingStyle | null;
   skillLevel:      SkillLevel | null;
   handedness:      Handedness | null;
+  goals:           string[];
   setBowlingStyle: (style: BowlingStyle) => void;
   setSkillLevel:   (level: SkillLevel) => void;
   setHandedness:   (hand: Handedness) => void;
+  setGoals:        (goals: string[]) => void;
   resetCoach:      () => void;
 
   favBrands:   string[];
@@ -40,10 +42,12 @@ export const useAppStore = create<AppState>()(
       bowlingStyle:    null,
       skillLevel:      null,
       handedness:      null,
+      goals:           [],
       setBowlingStyle: (style) => set({ bowlingStyle: style }),
       setSkillLevel:   (level) => set({ skillLevel: level }),
       setHandedness:   (hand)  => set({ handedness: hand }),
-      resetCoach:      () => set({ bowlingStyle: null, skillLevel: null, handedness: null }),
+      setGoals:        (goals) => set({ goals }),
+      resetCoach:      () => set({ bowlingStyle: null, skillLevel: null, handedness: null, goals: [] }),
 
       favBrands:   [],
       toggleBrand: (brand) =>

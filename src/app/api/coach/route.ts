@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const userId = verifyToken(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { messages, bowlingStyle, handedness, ball } = await req.json();
+  const { messages, bowlingStyle, handedness, goals, ball } = await req.json();
 
   // Fetch user context from DB in parallel
   const [user, recentGames, ballNotes] = await Promise.all([
@@ -66,14 +66,19 @@ export async function POST(req: NextRequest) {
     ballNotesCtx = `Their ball arsenal: ${notesList}.`;
   }
 
+  const goalsCtx = goals?.length
+    ? `This bowler's goals are: ${(goals as string[]).map((g, i) => `${i + 1}) ${g}`).join('; ')}. Keep every response connected to these goals — reference them when relevant and celebrate progress toward them.`
+    : '';
+
   const system = [
-    'You are a personal AI bowling coach with full knowledge of this bowler\'s history and equipment.',
+    'You are a personal AI bowling coach with full knowledge of this bowler\'s history, equipment, and goals.',
     nameCtx,
     styleCtx,
     ballCtx,
     historyCtx,
     ballNotesCtx,
-    'Adapt your language and depth to match the bowler — read their questions and history to gauge their experience, then respond at the right level without labeling them. Use their actual scores and equipment to give specific, personalized advice. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
+    goalsCtx,
+    'Adapt your language and depth to match the bowler — read their questions and history to gauge their experience, then respond at the right level without labeling them. Use their actual scores, equipment, and goals to give specific, personalized advice. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
   ].filter(Boolean).join(' ');
 
   const response = await anthropic.messages.create({

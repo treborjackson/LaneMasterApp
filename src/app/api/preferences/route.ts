@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ...prefs,
     favoriteBrands: JSON.parse(prefs.favoriteBrands),
+    goals:          JSON.parse(prefs.goals),
   });
 }
 
@@ -28,6 +29,7 @@ export async function PUT(req: NextRequest) {
       skillLevel:     body.skillLevel,
       handedness:     body.handedness,
       selectedBall:   body.selectedBall,
+      goals:          body.goals          ? JSON.stringify(body.goals)          : undefined,
       favoriteBrands: body.favoriteBrands ? JSON.stringify(body.favoriteBrands) : undefined,
     },
     create: {
@@ -36,6 +38,7 @@ export async function PUT(req: NextRequest) {
       skillLevel:     body.skillLevel   ?? 'beginner',
       handedness:     body.handedness   ?? 'right',
       selectedBall:   body.selectedBall ?? null,
+      goals:          body.goals          ? JSON.stringify(body.goals)          : '[]',
       favoriteBrands: body.favoriteBrands ? JSON.stringify(body.favoriteBrands) : '[]',
     },
   });
@@ -43,5 +46,6 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json({
     ...updated,
     favoriteBrands: JSON.parse(updated.favoriteBrands),
+    goals:          JSON.parse(updated.goals),
   });
 }
