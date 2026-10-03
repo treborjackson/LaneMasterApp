@@ -3,6 +3,8 @@ import { anthropic } from '@/lib/anthropic';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
+const MEMORY_TRIGGER = 6; // save memory after this many messages in a session
+
 export async function POST(req: NextRequest) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key || key.startsWith('your_')) {
@@ -17,8 +19,8 @@ export async function POST(req: NextRequest) {
 
   const { messages, bowlingStyle, handedness, goals, ball } = await req.json();
 
-  // Fetch user context from DB in parallel
-  const [user, recentGames, ballNotes] = await Promise.all([
+  // Fetch user context + existing memory in parallel
+  const [user, recentGames, ballNotes, existingMemory] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
     prisma.gameSession.findMany({
       where: { userId },
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
       take: 5,
       select: { ballName: true, brand: true, rating: true, notes: true },
     }),
+    prisma.coachMemory.findUnique({ where: { userId }, select: { summary: true, updatedAt: true } }),
   ]);
 
   const handCtx  = handedness === 'left' ? 'left-handed' : 'right-handed';
@@ -39,17 +42,13 @@ export async function POST(req: NextRequest) {
     ? `The user is a ${handCtx} TWO-HANDED bowler (no thumb). Focus on two-hand mechanics, axis tilt, rev rate, balance, and Belmonte-style delivery.`
     : `The user is a ${handCtx} ONE-HANDED bowler (thumb in). Focus on conventional swing mechanics, release timing, axis rotation, and footwork. Note lane play and arrow targeting from the ${handedness === 'left' ? 'left' : 'right'} side.`;
 
-  const ballCtx = ball
-    ? `Current ball: ${ball.name} (${ball.brand}, ${ball.cover}, hook ${ball.hook}/10).`
-    : '';
-
-  // Build personal history context
-  const nameCtx = user?.name ? `The bowler's name is ${user.name}.` : '';
+  const ballCtx  = ball ? `Current ball: ${ball.name} (${ball.brand}, ${ball.cover}, hook ${ball.hook}/10).` : '';
+  const nameCtx  = user?.name ? `The bowler's name is ${user.name}.` : '';
 
   let historyCtx = '';
   if (recentGames.length > 0) {
-    const avg = Math.round(recentGames.reduce((s, g) => s + g.totalScore, 0) / recentGames.length);
-    const best = Math.max(...recentGames.map((g) => g.totalScore));
+    const avg  = Math.round(recentGames.reduce((s, g) => s + g.totalScore, 0) / recentGames.length);
+    const best  = Math.max(...recentGames.map((g) => g.totalScore));
     const worst = Math.min(...recentGames.map((g) => g.totalScore));
     const recentList = recentGames
       .slice(0, 5)
@@ -60,25 +59,28 @@ export async function POST(req: NextRequest) {
 
   let ballNotesCtx = '';
   if (ballNotes.length > 0) {
-    const notesList = ballNotes
-      .map((b) => `${b.ballName} by ${b.brand} (rated ${b.rating}/10${b.notes ? `: ${b.notes}` : ''})`)
-      .join('; ');
-    ballNotesCtx = `Their ball arsenal: ${notesList}.`;
+    ballNotesCtx = `Their ball arsenal: ${ballNotes.map((b) => `${b.ballName} by ${b.brand} (rated ${b.rating}/10${b.notes ? `: ${b.notes}` : ''})`).join('; ')}.`;
   }
 
   const goalsCtx = goals?.length
     ? `This bowler's goals are: ${(goals as string[]).map((g, i) => `${i + 1}) ${g}`).join('; ')}. Keep every response connected to these goals — reference them when relevant and celebrate progress toward them.`
     : '';
 
+  // Coaching memory from previous sessions
+  const memoryCtx = existingMemory?.summary
+    ? `Coaching memory from previous sessions: ${existingMemory.summary}`
+    : '';
+
   const system = [
-    'You are a personal AI bowling coach with full knowledge of this bowler\'s history, equipment, and goals.',
+    'You are a personal AI bowling coach with full knowledge of this bowler\'s history, equipment, goals, and past coaching sessions.',
     nameCtx,
     styleCtx,
     ballCtx,
     historyCtx,
     ballNotesCtx,
     goalsCtx,
-    'Adapt your language and depth to match the bowler — read their questions and history to gauge their experience, then respond at the right level without labeling them. Use their actual scores, equipment, and goals to give specific, personalized advice. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
+    memoryCtx,
+    'Adapt your language and depth to match the bowler. Use their actual scores, equipment, goals, and coaching history to give specific, personalized advice. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
   ].filter(Boolean).join(' ');
 
   const response = await anthropic.messages.create({
@@ -89,5 +91,46 @@ export async function POST(req: NextRequest) {
   });
 
   const reply = response.content[0].type === 'text' ? response.content[0].text : '';
+
+  // Save memory after enough messages — fire and forget, don't block the reply
+  const shouldSaveMemory = messages.length >= MEMORY_TRIGGER &&
+    (messages.length === MEMORY_TRIGGER || messages.length % 10 === 0);
+
+  if (shouldSaveMemory) {
+    const allMessages = [...messages, { role: 'assistant', content: reply }];
+    void saveMemory(userId, allMessages, goals ?? []);
+  }
+
   return NextResponse.json({ reply });
+}
+
+async function saveMemory(userId: string, messages: { role: string; content: string }[], goals: string[]) {
+  try {
+    const transcript = messages
+      .map((m) => `${m.role === 'user' ? 'Bowler' : 'Coach'}: ${m.content}`)
+      .join('\n');
+
+    const goalsLine = goals.length ? `The bowler's goals are: ${goals.join(', ')}.` : '';
+
+    const summaryResponse = await anthropic.messages.create({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      system:     'You are summarizing a bowling coaching session for future reference. Be concise and specific.',
+      messages:   [{
+        role:    'user',
+        content: `${goalsLine}\n\nSummarize this coaching session in 3-5 bullet points. Focus on: what the bowler worked on, specific advice given, areas still needing improvement, and any progress toward their goals. Keep each point brief.\n\n${transcript}`,
+      }],
+    });
+
+    const summary = summaryResponse.content[0].type === 'text' ? summaryResponse.content[0].text : '';
+    if (!summary) return;
+
+    await prisma.coachMemory.upsert({
+      where:  { userId },
+      update: { summary },
+      create: { userId, summary },
+    });
+  } catch {
+    // Memory save failing should never affect the chat
+  }
 }

@@ -97,6 +97,15 @@ model Invite {
   @@map("invites")
 }
 
+model CoachMemory {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  summary   String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@map("coach_memories")
+}
+
 model FormAnalysis {
   id     String @id @default(cuid())
   userId String
