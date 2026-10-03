@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const userId = verifyToken(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { messages, bowlingStyle, skillLevel, ball } = await req.json();
+  const { messages, bowlingStyle, ball } = await req.json();
 
   // Fetch user context from DB in parallel
   const [user, recentGames, ballNotes] = await Promise.all([
@@ -37,12 +37,6 @@ export async function POST(req: NextRequest) {
   const styleCtx = bowlingStyle === 'twohand'
     ? 'The user is a TWO-HANDED bowler (no thumb). Focus on two-hand mechanics, axis tilt, rev rate, balance, and Belmonte-style delivery.'
     : 'The user is a ONE-HANDED bowler (thumb in). Focus on conventional swing mechanics, release timing, axis rotation, and footwork.';
-
-  const levelCtx: Record<string, string> = {
-    beginner:     'The user is a BEGINNER. Use simple language, avoid jargon, focus on fundamentals.',
-    intermediate: 'The user is INTERMEDIATE. They want consistency, hook control, and lane reading skills.',
-    advanced:     'The user is ADVANCED. Provide technical detail on mechanics, lane play, and tournament strategy.',
-  };
 
   const ballCtx = ball
     ? `Current ball: ${ball.name} (${ball.brand}, ${ball.cover}, hook ${ball.hook}/10).`
@@ -75,11 +69,10 @@ export async function POST(req: NextRequest) {
     'You are a personal AI bowling coach with full knowledge of this bowler\'s history and equipment.',
     nameCtx,
     styleCtx,
-    levelCtx[skillLevel] ?? '',
     ballCtx,
     historyCtx,
     ballNotesCtx,
-    'Use their history and arsenal to give specific, personalized advice. Reference their scores and equipment when relevant. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
+    'Adapt your language and depth to match the bowler — read their questions and history to gauge their experience, then respond at the right level without labeling them. Use their actual scores and equipment to give specific, personalized advice. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
   ].filter(Boolean).join(' ');
 
   const response = await anthropic.messages.create({

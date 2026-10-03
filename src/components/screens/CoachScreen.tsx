@@ -5,20 +5,15 @@ import { useAppStore } from '@/store/appStore';
 import { useCoach } from '@/hooks/useCoach';
 import { WoodPill } from '@/components/ui/WoodPill';
 import { PageHeader } from '@/components/ui/PageHeader';
-import type { BowlingStyle, SkillLevel } from '@/lib/types/coach';
+import type { BowlingStyle } from '@/lib/types/coach';
 
-const STYLES:  { id: BowlingStyle; label: string }[] = [
+const STYLES: { id: BowlingStyle; label: string }[] = [
   { id: 'onehand', label: '✋ One-Handed' },
   { id: 'twohand', label: '🤲 Two-Handed' },
 ];
-const LEVELS: { id: SkillLevel; label: string }[] = [
-  { id: 'beginner',     label: '🌱 Beginner' },
-  { id: 'intermediate', label: '⚡ Intermediate' },
-  { id: 'advanced',     label: '🏆 Advanced' },
-];
 
 export function CoachScreen() {
-  const { bowlingStyle, skillLevel, setBowlingStyle, setSkillLevel, token } = useAppStore();
+  const { bowlingStyle, setBowlingStyle, token } = useAppStore();
   const { messages, loading, sendMessage, clearMessages } = useCoach();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -27,8 +22,6 @@ export function CoachScreen() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const ready = bowlingStyle && skillLevel;
-
   async function handleSend() {
     if (!input.trim() || loading || !token) return;
     const msg = input.trim();
@@ -36,30 +29,18 @@ export function CoachScreen() {
     await sendMessage(msg);
   }
 
-  if (!ready) {
+  if (!bowlingStyle) {
     return (
       <div className="px-4 pb-4">
-        <PageHeader title="AI Coach" subtitle="Personalized bowling coaching" emoji="🧑‍🏫" />
-        <div className="mt-4 space-y-4">
-          <div>
-            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Your bowling style</p>
-            <div className="flex gap-2">
-              {STYLES.map((s) => (
-                <WoodPill key={s.id} active={bowlingStyle === s.id} onClick={() => setBowlingStyle(s.id)}>
-                  {s.label}
-                </WoodPill>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Your skill level</p>
-            <div className="flex flex-col gap-2">
-              {LEVELS.map((l) => (
-                <WoodPill key={l.id} active={skillLevel === l.id} onClick={() => setSkillLevel(l.id)}>
-                  {l.label}
-                </WoodPill>
-              ))}
-            </div>
+        <PageHeader title="AI Coach" subtitle="Your personal bowling coach" emoji="🧑‍🏫" />
+        <div className="mt-4">
+          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>How do you bowl?</p>
+          <div className="flex gap-2">
+            {STYLES.map((s) => (
+              <WoodPill key={s.id} active={bowlingStyle === s.id} onClick={() => setBowlingStyle(s.id)}>
+                {s.label}
+              </WoodPill>
+            ))}
           </div>
         </div>
       </div>
@@ -74,11 +55,6 @@ export function CoachScreen() {
         {STYLES.map((s) => (
           <WoodPill key={s.id} active={bowlingStyle === s.id} onClick={() => { clearMessages(); setBowlingStyle(s.id); }}>
             {s.label}
-          </WoodPill>
-        ))}
-        {LEVELS.map((l) => (
-          <WoodPill key={l.id} active={skillLevel === l.id} onClick={() => { clearMessages(); setSkillLevel(l.id); }}>
-            {l.label}
           </WoodPill>
         ))}
       </div>
