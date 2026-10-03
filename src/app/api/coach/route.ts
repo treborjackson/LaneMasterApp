@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       take: 5,
       select: { ballName: true, brand: true, rating: true, notes: true },
     }),
-    prisma.coachMemory.findUnique({ where: { userId }, select: { summary: true, updatedAt: true } }),
+    prisma.coachMemory.findUnique({ where: { userId }, select: { summary: true, updatedAt: true } }).catch(() => null),
   ]);
 
   const handCtx  = handedness === 'left' ? 'left-handed' : 'right-handed';
