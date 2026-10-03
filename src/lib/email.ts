@@ -1,13 +1,21 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM   = process.env.RESEND_FROM_EMAIL ?? 'Lane Master <onboarding@resend.dev>';
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
 
 export async function sendInviteEmail(to: string, inviteUrl: string, loginUrl: string): Promise<void> {
-  if (!resend) return;
+  const transporter = getTransporter();
+  if (!transporter) return;
 
-  await resend.emails.send({
-    from: FROM,
+  await transporter.sendMail({
+    from:    `"Lane Master" <${process.env.GMAIL_USER}>`,
     to,
     subject: 'Welcome to Lane Master!',
     html: `
