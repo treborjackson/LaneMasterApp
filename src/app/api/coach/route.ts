@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { anthropic } from '@/lib/anthropic';
 import { verifyToken } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -16,6 +17,23 @@ export async function POST(req: NextRequest) {
 
   const { messages, bowlingStyle, skillLevel, ball } = await req.json();
 
+  // Fetch user context from DB in parallel
+  const [user, recentGames, ballNotes] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    prisma.gameSession.findMany({
+      where: { userId },
+      orderBy: { datePlayed: 'desc' },
+      take: 10,
+      select: { totalScore: true, ballUsed: true, oilPattern: true, datePlayed: true },
+    }),
+    prisma.ballNote.findMany({
+      where: { userId },
+      orderBy: { dateAdded: 'desc' },
+      take: 5,
+      select: { ballName: true, brand: true, rating: true, notes: true },
+    }),
+  ]);
+
   const styleCtx = bowlingStyle === 'twohand'
     ? 'The user is a TWO-HANDED bowler (no thumb). Focus on two-hand mechanics, axis tilt, rev rate, balance, and Belmonte-style delivery.'
     : 'The user is a ONE-HANDED bowler (thumb in). Focus on conventional swing mechanics, release timing, axis rotation, and footwork.';
@@ -27,15 +45,41 @@ export async function POST(req: NextRequest) {
   };
 
   const ballCtx = ball
-    ? `Their ball: ${ball.name} (${ball.brand}, ${ball.cover}, hook ${ball.hook}/10).`
+    ? `Current ball: ${ball.name} (${ball.brand}, ${ball.cover}, hook ${ball.hook}/10).`
     : '';
 
+  // Build personal history context
+  const nameCtx = user?.name ? `The bowler's name is ${user.name}.` : '';
+
+  let historyCtx = '';
+  if (recentGames.length > 0) {
+    const avg = Math.round(recentGames.reduce((s, g) => s + g.totalScore, 0) / recentGames.length);
+    const best = Math.max(...recentGames.map((g) => g.totalScore));
+    const worst = Math.min(...recentGames.map((g) => g.totalScore));
+    const recentList = recentGames
+      .slice(0, 5)
+      .map((g) => `${g.totalScore}${g.ballUsed ? ` (${g.ballUsed})` : ''}${g.oilPattern ? ` on ${g.oilPattern}` : ''}`)
+      .join(', ');
+    historyCtx = `Recent game history (last ${recentGames.length} games): average ${avg}, best ${best}, worst ${worst}. Last 5 scores: ${recentList}.`;
+  }
+
+  let ballNotesCtx = '';
+  if (ballNotes.length > 0) {
+    const notesList = ballNotes
+      .map((b) => `${b.ballName} by ${b.brand} (rated ${b.rating}/10${b.notes ? `: ${b.notes}` : ''})`)
+      .join('; ');
+    ballNotesCtx = `Their ball arsenal: ${notesList}.`;
+  }
+
   const system = [
-    'You are an expert bowling coach.',
+    'You are a personal AI bowling coach with full knowledge of this bowler\'s history and equipment.',
+    nameCtx,
     styleCtx,
     levelCtx[skillLevel] ?? '',
     ballCtx,
-    'Keep responses concise — 2-3 sentences unless a list is needed.',
+    historyCtx,
+    ballNotesCtx,
+    'Use their history and arsenal to give specific, personalized advice. Reference their scores and equipment when relevant. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
   ].filter(Boolean).join(' ');
 
   const response = await anthropic.messages.create({
