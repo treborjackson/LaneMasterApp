@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const userId = verifyToken(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { messages, bowlingStyle, ball } = await req.json();
+  const { messages, bowlingStyle, handedness, ball } = await req.json();
 
   // Fetch user context from DB in parallel
   const [user, recentGames, ballNotes] = await Promise.all([
@@ -34,9 +34,10 @@ export async function POST(req: NextRequest) {
     }),
   ]);
 
+  const handCtx  = handedness === 'left' ? 'left-handed' : 'right-handed';
   const styleCtx = bowlingStyle === 'twohand'
-    ? 'The user is a TWO-HANDED bowler (no thumb). Focus on two-hand mechanics, axis tilt, rev rate, balance, and Belmonte-style delivery.'
-    : 'The user is a ONE-HANDED bowler (thumb in). Focus on conventional swing mechanics, release timing, axis rotation, and footwork.';
+    ? `The user is a ${handCtx} TWO-HANDED bowler (no thumb). Focus on two-hand mechanics, axis tilt, rev rate, balance, and Belmonte-style delivery.`
+    : `The user is a ${handCtx} ONE-HANDED bowler (thumb in). Focus on conventional swing mechanics, release timing, axis rotation, and footwork. Note lane play and arrow targeting from the ${handedness === 'left' ? 'left' : 'right'} side.`;
 
   const ballCtx = ball
     ? `Current ball: ${ball.name} (${ball.brand}, ${ball.cover}, hook ${ball.hook}/10).`

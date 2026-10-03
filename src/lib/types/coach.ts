@@ -1,5 +1,6 @@
 export type BowlingStyle = 'onehand' | 'twohand';
 export type SkillLevel   = 'beginner' | 'intermediate' | 'advanced';
+export type Handedness   = 'left' | 'right';
 
 export interface CoachMessage {
   role:    'user' | 'assistant';

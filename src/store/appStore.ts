@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Ball } from '@/lib/types/ball';
-import type { BowlingStyle, SkillLevel } from '@/lib/types/coach';
+import type { BowlingStyle, SkillLevel, Handedness } from '@/lib/types/coach';
 
 interface AppState {
   activeTab:       string;
@@ -12,8 +12,10 @@ interface AppState {
 
   bowlingStyle:    BowlingStyle | null;
   skillLevel:      SkillLevel | null;
+  handedness:      Handedness | null;
   setBowlingStyle: (style: BowlingStyle) => void;
   setSkillLevel:   (level: SkillLevel) => void;
+  setHandedness:   (hand: Handedness) => void;
   resetCoach:      () => void;
 
   favBrands:   string[];
@@ -37,9 +39,11 @@ export const useAppStore = create<AppState>()(
 
       bowlingStyle:    null,
       skillLevel:      null,
+      handedness:      null,
       setBowlingStyle: (style) => set({ bowlingStyle: style }),
       setSkillLevel:   (level) => set({ skillLevel: level }),
-      resetCoach:      () => set({ bowlingStyle: null, skillLevel: null }),
+      setHandedness:   (hand)  => set({ handedness: hand }),
+      resetCoach:      () => set({ bowlingStyle: null, skillLevel: null, handedness: null }),
 
       favBrands:   [],
       toggleBrand: (brand) =>

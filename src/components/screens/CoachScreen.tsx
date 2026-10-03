@@ -5,15 +5,20 @@ import { useAppStore } from '@/store/appStore';
 import { useCoach } from '@/hooks/useCoach';
 import { WoodPill } from '@/components/ui/WoodPill';
 import { PageHeader } from '@/components/ui/PageHeader';
-import type { BowlingStyle } from '@/lib/types/coach';
+import type { BowlingStyle, Handedness } from '@/lib/types/coach';
 
 const STYLES: { id: BowlingStyle; label: string }[] = [
   { id: 'onehand', label: '✋ One-Handed' },
   { id: 'twohand', label: '🤲 Two-Handed' },
 ];
 
+const HANDS: { id: Handedness; label: string }[] = [
+  { id: 'right', label: '👉 Right-Handed' },
+  { id: 'left',  label: '👈 Left-Handed'  },
+];
+
 export function CoachScreen() {
-  const { bowlingStyle, setBowlingStyle, token } = useAppStore();
+  const { bowlingStyle, handedness, setBowlingStyle, setHandedness, token } = useAppStore();
   const { messages, loading, sendMessage, clearMessages } = useCoach();
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -29,19 +34,34 @@ export function CoachScreen() {
     await sendMessage(msg);
   }
 
-  if (!bowlingStyle) {
+  if (!bowlingStyle || !handedness) {
     return (
       <div className="px-4 pb-4">
         <PageHeader title="AI Coach" subtitle="Your personal bowling coach" emoji="🧑‍🏫" />
-        <div className="mt-4">
-          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>How do you bowl?</p>
-          <div className="flex gap-2">
-            {STYLES.map((s) => (
-              <WoodPill key={s.id} active={bowlingStyle === s.id} onClick={() => setBowlingStyle(s.id)}>
-                {s.label}
-              </WoodPill>
-            ))}
+        <div className="mt-4 space-y-5">
+          <div>
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>How do you bowl?</p>
+            <div className="flex gap-2">
+              {STYLES.map((s) => (
+                <WoodPill key={s.id} active={bowlingStyle === s.id} onClick={() => setBowlingStyle(s.id)}>
+                  {s.label}
+                </WoodPill>
+              ))}
+            </div>
           </div>
+          <div>
+            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>Which hand do you bowl with?</p>
+            <div className="flex gap-2">
+              {HANDS.map((h) => (
+                <WoodPill key={h.id} active={handedness === h.id} onClick={() => setHandedness(h.id)}>
+                  {h.label}
+                </WoodPill>
+              ))}
+            </div>
+          </div>
+          {bowlingStyle && handedness === null && (
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Pick your bowling hand to continue</p>
+          )}
         </div>
       </div>
     );
@@ -51,10 +71,15 @@ export function CoachScreen() {
     <div className="flex flex-col h-full">
       <PageHeader title="AI Coach" emoji="🧑‍🏫" />
 
-      <div className="px-4 pb-2 flex gap-2">
+      <div className="px-4 pb-2 flex gap-2 flex-wrap">
         {STYLES.map((s) => (
           <WoodPill key={s.id} active={bowlingStyle === s.id} onClick={() => { clearMessages(); setBowlingStyle(s.id); }}>
             {s.label}
+          </WoodPill>
+        ))}
+        {HANDS.map((h) => (
+          <WoodPill key={h.id} active={handedness === h.id} onClick={() => { clearMessages(); setHandedness(h.id); }}>
+            {h.label}
           </WoodPill>
         ))}
       </div>

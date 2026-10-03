@@ -26,14 +26,16 @@ export async function PUT(req: NextRequest) {
     update: {
       bowlingStyle:   body.bowlingStyle,
       skillLevel:     body.skillLevel,
+      handedness:     body.handedness,
       selectedBall:   body.selectedBall,
       favoriteBrands: body.favoriteBrands ? JSON.stringify(body.favoriteBrands) : undefined,
     },
     create: {
       userId,
-      bowlingStyle:   body.bowlingStyle   ?? 'onehand',
-      skillLevel:     body.skillLevel     ?? 'beginner',
-      selectedBall:   body.selectedBall   ?? null,
+      bowlingStyle:   body.bowlingStyle ?? 'onehand',
+      skillLevel:     body.skillLevel   ?? 'beginner',
+      handedness:     body.handedness   ?? 'right',
+      selectedBall:   body.selectedBall ?? null,
       favoriteBrands: body.favoriteBrands ? JSON.stringify(body.favoriteBrands) : '[]',
     },
   });

@@ -6,7 +6,7 @@ import { apiCoachMessage } from '@/lib/api';
 import type { CoachMessage } from '@/lib/types/coach';
 
 export function useCoach() {
-  const { token, selectedBall, bowlingStyle, skillLevel } = useAppStore();
+  const { token, selectedBall, bowlingStyle, handedness } = useAppStore();
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
@@ -24,7 +24,7 @@ export function useCoach() {
       const data = await apiCoachMessage(token, {
         messages:     next,
         bowlingStyle: bowlingStyle ?? 'onehand',
-        skillLevel:   skillLevel  ?? 'beginner',
+        handedness:   handedness  ?? 'right',
         ball:         selectedBall,
       });
       const assistantMsg: CoachMessage = { role: 'assistant', content: data.reply };
@@ -34,7 +34,7 @@ export function useCoach() {
     } finally {
       setLoading(false);
     }
-  }, [token, messages, bowlingStyle, skillLevel, selectedBall]);
+  }, [token, messages, bowlingStyle, handedness, selectedBall]);
 
   function clearMessages() {
     setMessages([]);
