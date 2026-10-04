@@ -19,21 +19,21 @@ export async function POST(req: NextRequest) {
 
   const { messages, bowlingStyle, handedness, goals, ball } = await req.json();
 
-  // Fetch user context + existing memory in parallel
+  // Fetch user context + existing memory in parallel — each fails gracefully
   const [user, recentGames, ballNotes, existingMemory] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }).catch(() => null),
     prisma.gameSession.findMany({
       where: { userId },
       orderBy: { datePlayed: 'desc' },
       take: 10,
       select: { totalScore: true, ballUsed: true, oilPattern: true, datePlayed: true },
-    }),
+    }).catch(() => []),
     prisma.ballNote.findMany({
       where: { userId },
       orderBy: { dateAdded: 'desc' },
       take: 5,
       select: { ballName: true, brand: true, rating: true, notes: true },
-    }),
+    }).catch(() => []),
     prisma.coachMemory.findUnique({ where: { userId }, select: { summary: true, updatedAt: true } }).catch(() => null),
   ]);
 
@@ -83,12 +83,19 @@ export async function POST(req: NextRequest) {
     'Adapt your language and depth to match the bowler. Use their actual scores, equipment, goals, and coaching history to give specific, personalized advice. Keep responses concise — 2-3 sentences unless a drill or list is needed.',
   ].filter(Boolean).join(' ');
 
-  const response = await anthropic.messages.create({
-    model:      'claude-sonnet-4-20250514',
-    max_tokens: 512,
-    system,
-    messages,
-  });
+  let response;
+  try {
+    response = await anthropic.messages.create({
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: 512,
+      system,
+      messages,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[coach] anthropic error:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
   const reply = response.content[0].type === 'text' ? response.content[0].text : '';
 
