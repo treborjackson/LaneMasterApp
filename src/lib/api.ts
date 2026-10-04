@@ -99,8 +99,9 @@ export async function apiCoachMessage(token: string, payload: unknown) {
     headers: getHeaders(token),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Coach API error');
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error ?? `Coach API error ${res.status}`);
+  return data;
 }
 
 export async function apiAnalyzeForm(token: string, payload: unknown) {
