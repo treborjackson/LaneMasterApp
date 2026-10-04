@@ -97,7 +97,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const reply = response.content[0].type === 'text' ? response.content[0].text : '';
+  const reply = response.content[0]?.type === 'text' ? response.content[0].text : '';
+
+  if (!reply) {
+    console.error('[coach] empty reply, stop_reason:', response.stop_reason, 'content:', JSON.stringify(response.content));
+    return NextResponse.json({ error: `Empty reply — stop_reason: ${response.stop_reason}, content: ${JSON.stringify(response.content)}` }, { status: 500 });
+  }
 
   // Save memory after enough messages — fire and forget, don't block the reply
   const shouldSaveMemory = messages.length >= MEMORY_TRIGGER &&
