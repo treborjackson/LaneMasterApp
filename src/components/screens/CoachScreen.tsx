@@ -28,7 +28,7 @@ const GOAL_SUGGESTIONS = [
 
 export function CoachScreen() {
   const { bowlingStyle, handedness, goals, setBowlingStyle, setHandedness, setGoals, token } = useAppStore();
-  const { messages, loading, sendMessage, clearMessages } = useCoach();
+  const { messages, loading, error: coachError, sendMessage, clearMessages } = useCoach();
   const [input, setInput]         = useState('');
   const [goalInput, setGoalInput] = useState('');
   const [editingGoals, setEditingGoals] = useState(false);
@@ -259,6 +259,11 @@ export function CoachScreen() {
             <div className="rounded-2xl px-4 py-2 text-sm" style={{ background: 'var(--bg-card)', color: 'var(--text-muted)' }}>
               Thinking…
             </div>
+          </div>
+        )}
+        {coachError && (
+          <div className="rounded-xl px-4 py-3 text-xs font-mono break-all" style={{ background: 'var(--bg-card)', color: 'var(--red)', border: '1px solid var(--red)' }}>
+            ⚠️ {coachError}
           </div>
         )}
         <div ref={bottomRef} />

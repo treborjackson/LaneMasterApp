@@ -28,8 +28,12 @@ export function useCoach() {
         goals,
         ball:         selectedBall,
       });
-      const assistantMsg: CoachMessage = { role: 'assistant', content: data.reply };
-      setMessages((prev) => [...prev, assistantMsg]);
+      if (data.error) {
+        setError(`API error: ${data.error}`);
+      } else {
+        const assistantMsg: CoachMessage = { role: 'assistant', content: data.reply };
+        setMessages((prev) => [...prev, assistantMsg]);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Coach error');
     } finally {
