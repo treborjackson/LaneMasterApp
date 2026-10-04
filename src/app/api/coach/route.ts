@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     ballNotesCtx,
     goalsCtx,
     memoryCtx,
-    'Adapt your language to match the bowler. Use their scores, equipment, goals, and coaching history to give specific personalized advice. Write in plain conversational sentences — no markdown, no bold, no headers, no bullet symbols. If you need to list steps, use numbers like 1. 2. 3. Keep it short and easy to read on a phone.',
+    'Adapt your language to match the bowler. Use their scores, equipment, goals, and coaching history to give specific personalized advice. Keep responses short. Use simple bullet points with • when listing tips or steps. No markdown, no bold, no headers. Easy to read on a phone.',
   ].filter(Boolean).join(' ');
 
   let response;
