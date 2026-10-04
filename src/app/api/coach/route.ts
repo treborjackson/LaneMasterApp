@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
   let response;
   try {
     response = await anthropic.messages.create({
-      model:      'claude-sonnet-5-5',
-      max_tokens: 512,
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
       system,
       messages,
     });
@@ -97,7 +97,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const reply = response.content[0]?.type === 'text' ? response.content[0].text : '';
+  const textBlock = response.content.find((b) => b.type === 'text');
+  const reply = textBlock?.type === 'text' ? textBlock.text : '';
 
   if (!reply) {
     console.error('[coach] empty reply, stop_reason:', response.stop_reason, 'content:', JSON.stringify(response.content));
