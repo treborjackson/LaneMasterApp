@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     ballNotesCtx,
     goalsCtx,
     memoryCtx,
-    'Adapt your language to match the bowler. Use their scores, equipment, goals, and coaching history to give specific personalized advice. Keep responses short. Use simple bullet points with • when listing tips or steps. No markdown, no bold, no headers. Easy to read on a phone.',
+    'You are a coaching assistant on a phone. Be brief. Max 3-5 bullet points per response. Each bullet must be one short sentence — no fluff, no preamble. Use • for bullets. No markdown, no bold, no headers. If the bowler asks a yes/no question, answer it in one sentence then give at most 2 bullets. Never repeat context back to the bowler.',
   ].filter(Boolean).join(' ');
 
   let response;

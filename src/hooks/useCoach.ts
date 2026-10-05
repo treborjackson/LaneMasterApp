@@ -6,17 +6,16 @@ import { apiCoachMessage } from '@/lib/api';
 import type { CoachMessage } from '@/lib/types/coach';
 
 export function useCoach() {
-  const { token, selectedBall, bowlingStyle, handedness, goals } = useAppStore();
-  const [messages, setMessages] = useState<CoachMessage[]>([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const { token, selectedBall, bowlingStyle, handedness, goals, coachMessages, setCoachMessages } = useAppStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!token) throw new Error('Not authenticated');
 
     const userMsg: CoachMessage = { role: 'user', content };
-    const next = [...messages, userMsg];
-    setMessages(next);
+    const next = [...coachMessages, userMsg];
+    setCoachMessages(next);
     setLoading(true);
     setError(null);
 
@@ -32,18 +31,18 @@ export function useCoach() {
         setError(`API error: ${data.error}`);
       } else {
         const assistantMsg: CoachMessage = { role: 'assistant', content: data.reply };
-        setMessages((prev) => [...prev, assistantMsg]);
+        setCoachMessages([...next, assistantMsg]);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Coach error');
     } finally {
       setLoading(false);
     }
-  }, [token, messages, bowlingStyle, handedness, goals, selectedBall]);
+  }, [token, coachMessages, bowlingStyle, handedness, goals, selectedBall, setCoachMessages]);
 
   function clearMessages() {
-    setMessages([]);
+    setCoachMessages([]);
   }
 
-  return { messages, loading, error, sendMessage, clearMessages };
+  return { messages: coachMessages, loading, error, sendMessage, clearMessages };
 }

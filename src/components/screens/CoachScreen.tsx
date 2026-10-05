@@ -243,15 +243,33 @@ export function CoachScreen() {
         )}
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className="max-w-[80%] rounded-2xl px-4 py-2 text-sm"
-              style={{
-                background: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-card)',
-                color:      msg.role === 'user' ? 'var(--bg-deep)' : 'var(--text-primary)',
-              }}
-            >
-              {msg.content}
-            </div>
+            {msg.role === 'user' ? (
+              <div
+                className="max-w-[78%] rounded-2xl px-4 py-2.5 text-sm"
+                style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+              >
+                {msg.content}
+              </div>
+            ) : (
+              <div
+                className="max-w-[88%] rounded-2xl px-4 py-3 text-sm space-y-1.5"
+                style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+              >
+                {msg.content.split('\n').map((line, j) => {
+                  const bullet = line.startsWith('•') || line.startsWith('-');
+                  if (bullet) {
+                    return (
+                      <div key={j} className="flex gap-2 items-start">
+                        <span style={{ color: 'var(--accent)', flexShrink: 0 }}>•</span>
+                        <span>{line.replace(/^[•\-]\s*/, '')}</span>
+                      </div>
+                    );
+                  }
+                  if (!line.trim()) return null;
+                  return <p key={j}>{line}</p>;
+                })}
+              </div>
+            )}
           </div>
         ))}
         {loading && (

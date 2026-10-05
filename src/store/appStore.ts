@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Ball } from '@/lib/types/ball';
-import type { BowlingStyle, SkillLevel, Handedness } from '@/lib/types/coach';
+import type { BowlingStyle, SkillLevel, Handedness, CoachMessage } from '@/lib/types/coach';
 
 interface AppState {
   activeTab:       string;
@@ -14,11 +14,13 @@ interface AppState {
   skillLevel:      SkillLevel | null;
   handedness:      Handedness | null;
   goals:           string[];
-  setBowlingStyle: (style: BowlingStyle) => void;
-  setSkillLevel:   (level: SkillLevel) => void;
-  setHandedness:   (hand: Handedness) => void;
-  setGoals:        (goals: string[]) => void;
-  resetCoach:      () => void;
+  coachMessages:   CoachMessage[];
+  setBowlingStyle:  (style: BowlingStyle) => void;
+  setSkillLevel:    (level: SkillLevel) => void;
+  setHandedness:    (hand: Handedness) => void;
+  setGoals:         (goals: string[]) => void;
+  setCoachMessages: (msgs: CoachMessage[]) => void;
+  resetCoach:       () => void;
 
   favBrands:   string[];
   toggleBrand: (brand: string) => void;
@@ -43,11 +45,13 @@ export const useAppStore = create<AppState>()(
       skillLevel:      null,
       handedness:      null,
       goals:           [],
-      setBowlingStyle: (style) => set({ bowlingStyle: style }),
-      setSkillLevel:   (level) => set({ skillLevel: level }),
-      setHandedness:   (hand)  => set({ handedness: hand }),
-      setGoals:        (goals) => set({ goals }),
-      resetCoach:      () => set({ bowlingStyle: null, skillLevel: null, handedness: null, goals: [] }),
+      coachMessages:   [],
+      setBowlingStyle:  (style) => set({ bowlingStyle: style }),
+      setSkillLevel:    (level) => set({ skillLevel: level }),
+      setHandedness:    (hand)  => set({ handedness: hand }),
+      setGoals:         (goals) => set({ goals }),
+      setCoachMessages: (msgs)  => set({ coachMessages: msgs }),
+      resetCoach:       () => set({ bowlingStyle: null, skillLevel: null, handedness: null, goals: [], coachMessages: [] }),
 
       favBrands:   [],
       toggleBrand: (brand) =>
