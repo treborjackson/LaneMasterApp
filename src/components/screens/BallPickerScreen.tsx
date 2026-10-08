@@ -10,8 +10,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { VideoModal } from '@/components/ui/VideoModal';
 import type { Ball } from '@/lib/types/ball';
 
-const SKILL_LEVELS = ['All', 'Beginner', 'Intermediate', 'Advanced'] as const;
-
 const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 
 interface MonthPick {
@@ -281,7 +279,6 @@ function FeaturedBallCard({
 
 export function BallPickerScreen() {
   const { selectedBall, setSelectedBall, favBrands, toggleBrand } = useAppStore();
-  const [skillFilter, setSkillFilter] = useState<string>('All');
   const [video, setVideo] = useState<{ youtubeId: string; title: string } | null>(null);
   const [bom, setBom] = useState<BomData | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -300,11 +297,9 @@ export function BallPickerScreen() {
   // BoM picks that are NOT in the hardcoded list → show as featured extras
   const extraPicks = (bom?.picks ?? []).filter((p) => !BALLS.find((b) => b.name === p.ballName));
 
-  const filtered = BALLS.filter((b) => {
-    const skillOk = skillFilter === 'All' || b.skill === skillFilter;
-    const brandOk = favBrands.length === 0 || favBrands.includes(b.brand);
-    return skillOk && brandOk;
-  });
+  const filtered = BALLS.filter((b) =>
+    favBrands.length === 0 || favBrands.includes(b.brand)
+  );
 
   function handleSelectFromBom(ballName: string) {
     const ball = BALLS.find((b) => b.name === ballName);
@@ -337,15 +332,6 @@ export function BallPickerScreen() {
             </WoodPill>
           ))}
         </div>
-      </div>
-
-      {/* Skill filter */}
-      <div className="px-4 mb-4 flex gap-2 flex-wrap">
-        {SKILL_LEVELS.map((s) => (
-          <WoodPill key={s} active={skillFilter === s} onClick={() => setSkillFilter(s)}>
-            {s}
-          </WoodPill>
-        ))}
       </div>
 
       {/* AI-featured balls not in the local list */}
