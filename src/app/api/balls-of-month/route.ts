@@ -27,7 +27,7 @@ function extractJson(text: string): PicksResult | null {
 
 async function pickBallsOfMonth(): Promise<PicksResult> {
   const response = await anthropic.messages.create({
-    model:      'claude-sonnet-4-20250514',
+    model:      'claude-haiku-4-5-20251001',
     max_tokens: 1536,
     tools:      [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as never],
     messages: [{
