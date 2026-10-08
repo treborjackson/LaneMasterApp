@@ -32,11 +32,13 @@ async function pickBallsOfMonth(): Promise<PicksResult> {
     tools:      [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as never],
     messages: [{
       role:    'user',
-      content: 'Search at least 3 different bowling equipment review or retailer sites for ' +
-        'the bowling balls that are currently most recommended / top-rated / best-selling this month. ' +
-        'Then respond with ONLY a JSON object (no markdown fences, no extra text) in this exact shape: ' +
+      content:
+        'Go to bowling.com and search for their best-selling or top-rated bowling balls right now. ' +
+        'Also check bowlingball.com for their current top sellers. ' +
+        'Pick the 5 best bowling balls available this month based on what you find. ' +
+        'Respond with ONLY a JSON object (no markdown, no extra text) in this exact shape: ' +
         '{"picks": [{"ballName": "...", "brand": "...", "reasoning": "1-2 sentence summary of why it made the list"}, ' +
-        '... exactly 5 entries, ranked best first], "sources": ["url1", "url2", "url3"]}',
+        '... exactly 5 entries ranked best first], "sources": ["https://www.bowling.com", "https://www.bowlingball.com"]}',
     }],
   });
 
@@ -44,7 +46,7 @@ async function pickBallsOfMonth(): Promise<PicksResult> {
   const text   = textBlock && textBlock.type === 'text' ? textBlock.text : '';
   const parsed = extractJson(text);
 
-  if (!parsed) throw new Error('Could not parse balls-of-month response');
+  if (!parsed) throw new Error(`Could not parse response: ${text.slice(0, 200)}`);
   return parsed;
 }
 
@@ -54,21 +56,30 @@ export async function GET() {
     return NextResponse.json({ error: 'Balls of the Month is not configured yet.' }, { status: 200 });
   }
 
-  const latest = await prisma.ballsOfMonth.findFirst({ orderBy: { createdAt: 'desc' } });
-  if (latest && Date.now() - latest.createdAt.getTime() < MONTH_MS) {
-    return NextResponse.json({
-      picks:   JSON.parse(latest.picks),
-      sources: JSON.parse(latest.sources),
-    });
+  try {
+    // Check for a cached result within the last 30 days
+    const latest = await prisma.ballsOfMonth.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
+    if (latest && Date.now() - latest.createdAt.getTime() < MONTH_MS) {
+      return NextResponse.json({
+        picks:   JSON.parse(latest.picks),
+        sources: JSON.parse(latest.sources),
+      });
+    }
+
+    const result = await pickBallsOfMonth();
+
+    // Save to DB — if table doesn't exist yet, still return the result
+    await prisma.ballsOfMonth.create({
+      data: {
+        picks:   JSON.stringify(result.picks),
+        sources: JSON.stringify(result.sources),
+      },
+    }).catch(() => {});
+
+    return NextResponse.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[balls-of-month] error:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  const result = await pickBallsOfMonth();
-  await prisma.ballsOfMonth.create({
-    data: {
-      picks:   JSON.stringify(result.picks),
-      sources: JSON.stringify(result.sources),
-    },
-  });
-
-  return NextResponse.json(result);
 }

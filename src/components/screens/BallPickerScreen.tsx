@@ -19,15 +19,22 @@ interface BomData {
 }
 
 export function BallPickerScreen() {
-  const [bom, setBom]       = useState<BomData | null>(null);
+  const [bom, setBom]         = useState<BomData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen]     = useState<number | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [open, setOpen]       = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/balls-of-month')
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data?.picks)) setBom(data); })
-      .catch(() => {})
+      .then((data) => {
+        if (Array.isArray(data?.picks)) {
+          setBom(data);
+        } else if (data?.error) {
+          setFetchError(data.error);
+        }
+      })
+      .catch((e) => setFetchError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -42,7 +49,13 @@ export function BallPickerScreen() {
         </div>
       )}
 
-      {!loading && (!bom || bom.picks.length === 0) && (
+      {!loading && fetchError && (
+        <div className="mx-4 mt-4 rounded-xl px-4 py-3 text-xs break-all" style={{ background: 'var(--bg-card)', color: 'var(--red)', border: '1px solid var(--red)' }}>
+          ⚠️ {fetchError}
+        </div>
+      )}
+
+      {!loading && !fetchError && (!bom || bom.picks.length === 0) && (
         <div className="px-4 mt-8 text-center" style={{ color: 'var(--text-faint)' }}>
           <p className="text-3xl mb-2">🎳</p>
           <p className="text-sm">No picks available yet.</p>
