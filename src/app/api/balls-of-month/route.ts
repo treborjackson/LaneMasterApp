@@ -28,17 +28,17 @@ function extractJson(text: string): PicksResult | null {
 async function pickBallsOfMonth(): Promise<PicksResult> {
   const response = await anthropic.messages.create({
     model:      'claude-haiku-4-5-20251001',
-    max_tokens: 1536,
+    max_tokens: 2048,
     tools:      [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as never],
     messages: [{
       role:    'user',
       content:
-        'Go to bowling.com and search for their best-selling or top-rated bowling balls right now. ' +
-        'Also check bowlingball.com for their current top sellers. ' +
-        'Pick the 5 best bowling balls available this month based on what you find. ' +
-        'Respond with ONLY a JSON object (no markdown, no extra text) in this exact shape: ' +
+        'Search the web for the top rated and best selling bowling balls right now. ' +
+        'Search for "best bowling balls 2026" and "top rated bowling balls bowlingball.com" and "bowling.com best sellers". ' +
+        'Based on what you find, pick the 5 best bowling balls available this month. ' +
+        'Respond with ONLY a JSON object (no markdown fences, no extra text) in this exact shape: ' +
         '{"picks": [{"ballName": "...", "brand": "...", "reasoning": "1-2 sentence summary of why it made the list"}, ' +
-        '... exactly 5 entries ranked best first], "sources": ["https://www.bowling.com", "https://www.bowlingball.com"]}',
+        '... exactly 5 entries ranked best first], "sources": ["url1", "url2"]}',
     }],
   });
 
