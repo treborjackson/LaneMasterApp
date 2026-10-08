@@ -1,17 +1,12 @@
 'use client';
 
 interface VideoModalProps {
-  youtubeId?:    string;
-  searchQuery?:  string;
-  title:         string;
-  onClose:       () => void;
+  youtubeId: string;
+  title:     string;
+  onClose:   () => void;
 }
 
-export function VideoModal({ youtubeId, searchQuery, title, onClose }: VideoModalProps) {
-  const src = youtubeId
-    ? `https://www.youtube.com/embed/${youtubeId}?autoplay=1`
-    : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(searchQuery ?? '')}&autoplay=1`;
-
+export function VideoModal({ youtubeId, title, onClose }: VideoModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -30,7 +25,7 @@ export function VideoModal({ youtubeId, searchQuery, title, onClose }: VideoModa
         <div className="aspect-video">
           <iframe
             className="w-full h-full"
-            src={src}
+            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />

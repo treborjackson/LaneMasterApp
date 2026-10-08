@@ -19,6 +19,7 @@ interface MonthPick {
   speed:     number;
   price:     string;
   reasoning: string;
+  youtubeId: string;
 }
 
 interface BomData {
@@ -48,8 +49,7 @@ export function BallPickerScreen() {
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [open, setOpen]           = useState<number | null>(null);
-  const [video, setVideo]         = useState<{ youtubeId?: string; searchQuery?: string; title: string } | null>(null);
-  const [videoLoading, setVideoLoading] = useState<number | null>(null);
+  const [video, setVideo] = useState<{ youtubeId: string; title: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/balls-of-month')
@@ -62,27 +62,13 @@ export function BallPickerScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function openVideo(pick: MonthPick, index: number) {
-    const rev = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
-    if (rev) {
-      setVideo({ youtubeId: rev.youtubeId, title: rev.title });
-      return;
-    }
-
-    // Search for the video server-side and embed the real ID
-    setVideoLoading(index);
-    try {
-      const query = `${pick.brand} ${pick.ballName} bowling ball review`;
-      const res   = await fetch(`/api/youtube-search?q=${encodeURIComponent(query)}`);
-      const data  = await res.json();
-      setVideo({
-        youtubeId: data.videoId,
-        title:     `${pick.ballName} Video`,
-      });
-    } catch {
-      setVideo({ youtubeId: undefined, searchQuery: `${pick.brand} ${pick.ballName} bowling ball review`, title: `${pick.ballName} Videos` });
-    } finally {
-      setVideoLoading(null);
+  function openVideo(pick: MonthPick) {
+    // Prefer the video ID stored with the pick (fetched at refresh time)
+    const storedId = pick.youtubeId;
+    const rev      = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
+    const videoId  = storedId || rev?.youtubeId;
+    if (videoId) {
+      setVideo({ youtubeId: videoId, title: `${pick.ballName} Video` });
     }
   }
 
@@ -130,9 +116,10 @@ export function BallPickerScreen() {
           </div>
 
           {bom.picks.map((pick, i) => {
-            const isOpen  = open === i;
-            const isTop3  = i < 3;
-            const hasVideo = BALL_REVIEWS.some((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
+            const isOpen   = open === i;
+            const isTop3   = i < 3;
+            const rev      = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
+            const hasVideo = !!(pick.youtubeId || rev?.youtubeId);
 
             return (
               <WoodCard
@@ -232,14 +219,15 @@ export function BallPickerScreen() {
 
                     {/* Action buttons */}
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => openVideo(pick, i)}
-                        disabled={videoLoading === i}
-                        className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-60"
-                        style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-                      >
-                        {videoLoading === i ? 'Loading…' : '▶ Watch Video'}
-                      </button>
+                      {hasVideo && (
+                        <button
+                          onClick={() => openVideo(pick)}
+                          className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
+                          style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+                        >
+                          ▶ Watch Video
+                        </button>
+                      )}
                       <button
                         onClick={() => setOpen(null)}
                         className="px-4 py-2.5 rounded-lg text-sm border"
@@ -257,12 +245,7 @@ export function BallPickerScreen() {
       )}
 
       {video && (
-        <VideoModal
-          youtubeId={video.youtubeId}
-          searchQuery={video.searchQuery}
-          title={video.title}
-          onClose={() => setVideo(null)}
-        />
+        <VideoModal youtubeId={video.youtubeId} title={video.title} onClose={() => setVideo(null)} />
       )}
     </div>
   );
