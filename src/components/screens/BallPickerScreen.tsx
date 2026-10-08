@@ -6,9 +6,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { VideoModal } from '@/components/ui/VideoModal';
 import { BALL_REVIEWS } from '@/lib/constants/ballReviews';
 
-function youtubeSearchUrl(ballName: string, brand: string) {
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${brand} ${ballName} bowling ball review`)}`;
-}
 
 const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 const MEDAL_LABELS = ['1st Place', '2nd Place', '3rd Place', '4th Place', '5th Place'];
@@ -51,7 +48,7 @@ export function BallPickerScreen() {
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [open, setOpen]           = useState<number | null>(null);
-  const [video, setVideo]         = useState<{ youtubeId: string; title: string } | null>(null);
+  const [video, setVideo] = useState<{ youtubeId?: string; searchQuery?: string; title: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/balls-of-month')
@@ -64,9 +61,16 @@ export function BallPickerScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  function openVideo(ballName: string) {
-    const rev = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === ballName.toLowerCase());
-    if (rev) setVideo({ youtubeId: rev.youtubeId, title: rev.title });
+  function openVideo(pick: MonthPick) {
+    const rev = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
+    if (rev) {
+      setVideo({ youtubeId: rev.youtubeId, title: rev.title });
+    } else {
+      setVideo({
+        searchQuery: `${pick.brand} ${pick.ballName} bowling ball review`,
+        title: `${pick.ballName} Videos`,
+      });
+    }
   }
 
   return (
@@ -215,26 +219,13 @@ export function BallPickerScreen() {
 
                     {/* Action buttons */}
                     <div className="flex gap-2">
-                      {hasVideo ? (
-                        <button
-                          onClick={() => openVideo(pick.ballName)}
-                          className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
-                          style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-                        >
-                          ▶ Watch Video
-                        </button>
-                      ) : (
-                        <a
-                          href={youtubeSearchUrl(pick.ballName, pick.brand)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
-                          style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          ▶ Watch on YouTube
-                        </a>
-                      )}
+                      <button
+                        onClick={() => openVideo(pick)}
+                        className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
+                        style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+                      >
+                        ▶ Watch Video
+                      </button>
                       <button
                         onClick={() => setOpen(null)}
                         className="px-4 py-2.5 rounded-lg text-sm border"
@@ -252,7 +243,12 @@ export function BallPickerScreen() {
       )}
 
       {video && (
-        <VideoModal youtubeId={video.youtubeId} title={video.title} onClose={() => setVideo(null)} />
+        <VideoModal
+          youtubeId={video.youtubeId}
+          searchQuery={video.searchQuery}
+          title={video.title}
+          onClose={() => setVideo(null)}
+        />
       )}
     </div>
   );
