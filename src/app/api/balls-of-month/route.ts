@@ -3,6 +3,7 @@ import { anthropic } from '@/lib/anthropic';
 import { prisma } from '@/lib/db';
 
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const SOURCE_URL = 'https://www.bowling.com/best-gear/best-bowling-balls';
 
 interface Pick {
   ballName:  string;
@@ -25,28 +26,48 @@ function extractJson(text: string): PicksResult | null {
   }
 }
 
+async function fetchPageText(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      'Accept': 'text/html',
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch bowling.com: ${res.status}`);
+  const html = await res.text();
+  // Strip tags and collapse whitespace for a smaller payload
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, 8000);
+}
+
 async function pickBallsOfMonth(): Promise<PicksResult> {
+  const pageText = await fetchPageText(SOURCE_URL);
+
   const response = await anthropic.messages.create({
     model:      'claude-haiku-4-5-20251001',
-    max_tokens: 2048,
-    tools:      [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as never],
+    max_tokens: 1024,
     messages: [{
       role:    'user',
       content:
-        'Search the web for the top rated and best selling bowling balls right now. ' +
-        'Search for "best bowling balls 2026" and "top rated bowling balls bowlingball.com" and "bowling.com best sellers". ' +
-        'Based on what you find, pick the 5 best bowling balls available this month. ' +
-        'Respond with ONLY a JSON object (no markdown fences, no extra text) in this exact shape: ' +
+        'Below is text scraped from bowling.com\'s best bowling balls page. ' +
+        'Extract the top 5 bowling balls mentioned. ' +
+        'Respond with ONLY a JSON object (no markdown, no extra text) in this exact shape: ' +
         '{"picks": [{"ballName": "...", "brand": "...", "reasoning": "1-2 sentence summary of why it made the list"}, ' +
-        '... exactly 5 entries ranked best first], "sources": ["url1", "url2"]}',
+        '... exactly 5 entries ranked as they appear on the page], ' +
+        '"sources": ["' + SOURCE_URL + '"]}\n\n' +
+        'PAGE TEXT:\n' + pageText,
     }],
   });
 
-  const textBlock = response.content.filter((b) => b.type === 'text').pop();
-  const text   = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+  const textBlock = response.content.find((b) => b.type === 'text');
+  const text   = textBlock?.type === 'text' ? textBlock.text : '';
   const parsed = extractJson(text);
 
-  if (!parsed) throw new Error(`Could not parse response: ${text.slice(0, 200)}`);
+  if (!parsed) throw new Error(`Could not parse response: ${text.slice(0, 300)}`);
   return parsed;
 }
 
@@ -57,7 +78,6 @@ export async function GET() {
   }
 
   try {
-    // Check for a cached result within the last 30 days
     const latest = await prisma.ballsOfMonth.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
     if (latest && Date.now() - latest.createdAt.getTime() < MONTH_MS) {
       return NextResponse.json({
@@ -68,7 +88,6 @@ export async function GET() {
 
     const result = await pickBallsOfMonth();
 
-    // Save to DB — if table doesn't exist yet, still return the result
     await prisma.ballsOfMonth.create({
       data: {
         picks:   JSON.stringify(result.picks),
