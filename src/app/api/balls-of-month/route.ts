@@ -8,6 +8,11 @@ const SOURCE_URL = 'https://www.bowling.com/best-gear/best-bowling-balls';
 interface Pick {
   ballName:  string;
   brand:     string;
+  cover:     string;
+  lane:      string;
+  hook:      number;
+  speed:     number;
+  price:     string;
   reasoning: string;
 }
 
@@ -54,9 +59,11 @@ async function pickBallsOfMonth(): Promise<PicksResult> {
       role:    'user',
       content:
         'Below is text scraped from bowling.com\'s best bowling balls page. ' +
-        'Extract the top 5 bowling balls mentioned. ' +
+        'Extract the top 5 bowling balls mentioned with as much detail as you can find. ' +
+        'For hook and speed, estimate on a 1-10 scale based on the cover stock and description (solid reactive = higher hook, pearl = higher speed). ' +
+        'For price, use what is shown or estimate based on category. ' +
         'Respond with ONLY a JSON object (no markdown, no extra text) in this exact shape: ' +
-        '{"picks": [{"ballName": "...", "brand": "...", "reasoning": "1-2 sentence summary of why it made the list"}, ' +
+        '{"picks": [{"ballName": "...", "brand": "...", "cover": "Solid/Pearl/Hybrid Reactive or Plastic", "lane": "Light/Medium/Heavy oil", "hook": 7, "speed": 7, "price": "$xxx", "reasoning": "1-2 sentence summary"}, ' +
         '... exactly 5 entries ranked as they appear on the page], ' +
         '"sources": ["' + SOURCE_URL + '"]}\n\n' +
         'PAGE TEXT:\n' + pageText,
