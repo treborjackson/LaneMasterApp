@@ -6,6 +6,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { VideoModal } from '@/components/ui/VideoModal';
 import { BALL_REVIEWS } from '@/lib/constants/ballReviews';
 
+function youtubeSearchUrl(ballName: string, brand: string) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${brand} ${ballName} bowling ball review`)}`;
+}
+
 const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 const MEDAL_LABELS = ['1st Place', '2nd Place', '3rd Place', '4th Place', '5th Place'];
 
@@ -158,7 +162,7 @@ export function BallPickerScreen() {
                       >
                         {MEDAL_LABELS[i]}
                       </span>
-                      {hasVideo && !isOpen && (
+                      {!isOpen && (
                         <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>▶ video</span>
                       )}
                     </div>
@@ -211,14 +215,25 @@ export function BallPickerScreen() {
 
                     {/* Action buttons */}
                     <div className="flex gap-2">
-                      {hasVideo && (
+                      {hasVideo ? (
                         <button
                           onClick={() => openVideo(pick.ballName)}
                           className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
                           style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
                         >
-                          ▶ Watch Official Video
+                          ▶ Watch Video
                         </button>
+                      ) : (
+                        <a
+                          href={youtubeSearchUrl(pick.ballName, pick.brand)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
+                          style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ▶ Watch on YouTube
+                        </a>
                       )}
                       <button
                         onClick={() => setOpen(null)}
