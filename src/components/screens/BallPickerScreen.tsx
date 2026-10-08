@@ -48,7 +48,8 @@ export function BallPickerScreen() {
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [open, setOpen]           = useState<number | null>(null);
-  const [video, setVideo] = useState<{ youtubeId?: string; searchQuery?: string; title: string } | null>(null);
+  const [video, setVideo]         = useState<{ youtubeId?: string; searchQuery?: string; title: string } | null>(null);
+  const [videoLoading, setVideoLoading] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/balls-of-month')
@@ -61,15 +62,27 @@ export function BallPickerScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  function openVideo(pick: MonthPick) {
+  async function openVideo(pick: MonthPick, index: number) {
     const rev = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
     if (rev) {
       setVideo({ youtubeId: rev.youtubeId, title: rev.title });
-    } else {
+      return;
+    }
+
+    // Search for the video server-side and embed the real ID
+    setVideoLoading(index);
+    try {
+      const query = `${pick.brand} ${pick.ballName} bowling ball review`;
+      const res   = await fetch(`/api/youtube-search?q=${encodeURIComponent(query)}`);
+      const data  = await res.json();
       setVideo({
-        searchQuery: `${pick.brand} ${pick.ballName} bowling ball review`,
-        title: `${pick.ballName} Videos`,
+        youtubeId: data.videoId,
+        title:     `${pick.ballName} Video`,
       });
+    } catch {
+      setVideo({ youtubeId: undefined, searchQuery: `${pick.brand} ${pick.ballName} bowling ball review`, title: `${pick.ballName} Videos` });
+    } finally {
+      setVideoLoading(null);
     }
   }
 
@@ -220,11 +233,12 @@ export function BallPickerScreen() {
                     {/* Action buttons */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => openVideo(pick)}
-                        className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
+                        onClick={() => openVideo(pick, i)}
+                        disabled={videoLoading === i}
+                        className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-60"
                         style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
                       >
-                        ▶ Watch Video
+                        {videoLoading === i ? 'Loading…' : '▶ Watch Video'}
                       </button>
                       <button
                         onClick={() => setOpen(null)}
