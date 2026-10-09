@@ -157,8 +157,10 @@ export function ScoreScreen() {
   } = useAppStore();
   const { saveGame } = useGames();
 
-  const [frames, setFrames] = useState<Frame[]>(initFrames());
-  const [saved, setSaved]   = useState(false);
+  const [frames, setFrames]   = useState<Frame[]>(initFrames());
+  const [saved, setSaved]     = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Fixed session info
   const [bowlingAlley, setBowlingAlley] = useState(lastBowlingAlley);
@@ -246,6 +248,8 @@ export function ScoreScreen() {
 
   async function handleSave() {
     if (!token) { setActiveTab('history'); return; }
+    setSaving(true);
+    setSaveError(null);
     setLastBowlingAlley(bowlingAlley);
     setLastLanePair(laneNumber);
 
@@ -257,18 +261,24 @@ export function ScoreScreen() {
       ...adjustments.map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · ${a.mark}` : ''}`),
     ].filter(Boolean).join(' | ');
 
-    await saveGame({
-      totalScore:       total as number,
-      ballUsed:         null,
-      laneNumber:       laneNumber ? parseInt(laneNumber) : null,
-      oilPattern:       oilPattern   || null,
-      bowlingAlley:     bowlingAlley || null,
-      stance:           null,
-      targetArrow:      null,
-      boardAdjustments: boardLog     || null,
-      frames,
-    });
-    setSaved(true);
+    try {
+      await saveGame({
+        totalScore:       total as number,
+        ballUsed:         null,
+        laneNumber:       laneNumber ? parseInt(laneNumber) : null,
+        oilPattern:       oilPattern   || null,
+        bowlingAlley:     bowlingAlley || null,
+        stance:           null,
+        targetArrow:      null,
+        boardAdjustments: boardLog     || null,
+        frames,
+      });
+      setSaved(true);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save game. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const options = current ? validOptions(frames, current.fi, current.ball) : [];
@@ -359,16 +369,23 @@ export function ScoreScreen() {
 
       {/* Save / New Game */}
       {isComplete && (
-        <div className="px-3 mb-4 flex gap-2">
-          <button onClick={handleSave} disabled={saved}
-            className="flex-1 py-3 rounded-xl font-bold text-sm disabled:opacity-50"
-            style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
-            {saved ? '✅ Saved' : '💾 Save Game'}
-          </button>
-          <button onClick={newGame} className="px-4 py-3 rounded-xl text-sm border"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
-            New Game
-          </button>
+        <div className="px-3 mb-4 space-y-2">
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saved || saving}
+              className="flex-1 py-3 rounded-xl font-bold text-sm disabled:opacity-50"
+              style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
+              {saving ? '⏳ Saving…' : saved ? '✅ Saved' : '💾 Save Game'}
+            </button>
+            <button onClick={newGame} className="px-4 py-3 rounded-xl text-sm border"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+              New Game
+            </button>
+          </div>
+          {saveError && (
+            <p className="text-xs text-center px-2" style={{ color: '#ef4444' }}>
+              ⚠️ {saveError}
+            </p>
+          )}
         </div>
       )}
 
