@@ -421,8 +421,8 @@ export function ScoreScreen() {
             </div>
           ))}
 
-          {/* Add new entry */}
-          <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px dashed var(--border)' }}>
+          {/* Add new entry — only show from frame 2 onward; frame 1 is covered by Starting */}
+          {currentFrame > 1 && <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px dashed var(--border)' }}>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-bold px-2 py-1 rounded flex-shrink-0"
                 style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
@@ -456,7 +456,7 @@ export function ScoreScreen() {
               style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
               + Add Frame {currentFrame} Adjustment
             </button>
-          </div>
+          </div>}
         </div>
       </div>
     </div>
