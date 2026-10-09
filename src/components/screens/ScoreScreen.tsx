@@ -335,30 +335,6 @@ export function ScoreScreen() {
             ↔️ Board & Mark Tracking
           </p>
 
-          {/* Starting position */}
-          <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)' }}>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded inline-block"
-              style={{ background: 'var(--bg-muted)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-              Starting
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Board</p>
-                <input value={startBoard} onChange={(e) => setStartBoard(e.target.value)}
-                  placeholder="e.g. 25"
-                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-              </div>
-              <div>
-                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                <input value={startMark} onChange={(e) => setStartMark(e.target.value)}
-                  placeholder="e.g. 3rd arrow"
-                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-              </div>
-            </div>
-          </div>
-
           {/* Adjustment log */}
           {adjustments.map((adj, idx) => (
             <div key={idx}>
@@ -421,8 +397,8 @@ export function ScoreScreen() {
             </div>
           ))}
 
-          {/* Add new entry — only show from frame 2 onward; frame 1 is covered by Starting */}
-          {currentFrame > 1 && <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px dashed var(--border)' }}>
+          {/* Add new entry */}
+          <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px dashed var(--border)' }}>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-bold px-2 py-1 rounded flex-shrink-0"
                 style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
@@ -456,7 +432,7 @@ export function ScoreScreen() {
               style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
               + Add Frame {currentFrame} Adjustment
             </button>
-          </div>}
+          </div>
         </div>
       </div>
     </div>
