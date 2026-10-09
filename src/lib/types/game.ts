@@ -6,11 +6,14 @@ export interface Frame {
 }
 
 export interface GameSession {
-  id:         string;
-  datePlayed: string;
-  totalScore: number;
-  ballUsed:   string | null;
-  laneNumber: number | null;
-  oilPattern: string | null;
-  frames:     Frame[];
+  id:           string;
+  datePlayed:   string;
+  totalScore:   number;
+  ballUsed:     string | null;
+  laneNumber:   number | null;
+  oilPattern:   string | null;
+  bowlingAlley: string | null;
+  stance:       string | null;
+  targetArrow:  string | null;
+  frames:       Frame[];
 }

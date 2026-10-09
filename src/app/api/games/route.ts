@@ -25,11 +25,14 @@ export async function POST(req: NextRequest) {
   const game = await prisma.gameSession.create({
     data: {
       userId,
-      totalScore: body.totalScore ?? 0,
-      ballUsed:   body.ballUsed   ?? null,
-      laneNumber: body.laneNumber ?? null,
-      oilPattern: body.oilPattern ?? null,
-      frames:     JSON.stringify(body.frames ?? []),
+      totalScore:   body.totalScore   ?? 0,
+      ballUsed:     body.ballUsed     ?? null,
+      laneNumber:   body.laneNumber   ?? null,
+      oilPattern:   body.oilPattern   ?? null,
+      bowlingAlley: body.bowlingAlley ?? null,
+      stance:       body.stance       ?? null,
+      targetArrow:  body.targetArrow  ?? null,
+      frames:       JSON.stringify(body.frames ?? []),
     },
   });
 

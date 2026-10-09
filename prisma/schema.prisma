@@ -47,11 +47,14 @@ model GameSession {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  datePlayed DateTime @default(now())
-  totalScore Int      @default(0)
-  ballUsed   String?
-  laneNumber Int?
-  oilPattern String?
+  datePlayed    DateTime @default(now())
+  totalScore    Int      @default(0)
+  ballUsed      String?
+  laneNumber    Int?
+  oilPattern    String?
+  bowlingAlley  String?
+  stance        String?
+  targetArrow   String?
 
   frames String @default("[]")
 

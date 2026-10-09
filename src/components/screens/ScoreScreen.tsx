@@ -76,16 +76,47 @@ function BallBox({ value, active }: { value: string; active: boolean }) {
   );
 }
 
+function NoteField({
+  label, value, onChange, placeholder, type = 'text',
+}: {
+  label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>{label}</p>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+        style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+      />
+    </div>
+  );
+}
+
 export function ScoreScreen() {
   const { token, setActiveTab } = useAppStore();
   const { saveGame }            = useGames();
   const [frames, setFrames]     = useState<Frame[]>(initFrames());
   const [saved, setSaved]       = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  // Game notes
+  const [bowlingAlley, setBowlingAlley] = useState('');
+  const [laneNumber, setLaneNumber]     = useState('');
+  const [oilPattern, setOilPattern]     = useState('');
+  const [stance, setStance]             = useState('');
+  const [targetArrow, setTargetArrow]   = useState('');
 
   const current       = nextBall(frames);
   const runningScores = calcRunningScores(frames);
   const total         = runningScores.filter(Boolean).pop() ?? 0;
   const isComplete    = current === null;
+
+  // Count filled notes to show badge
+  const notesFilled = [bowlingAlley, laneNumber, oilPattern, stance, targetArrow].filter(Boolean).length;
 
   function enter(value: string) {
     if (!current) return;
@@ -112,11 +143,28 @@ export function ScoreScreen() {
     setSaved(false);
   }
 
-  function newGame() { setFrames(initFrames()); setSaved(false); }
+  function newGame() {
+    setFrames(initFrames());
+    setSaved(false);
+    setBowlingAlley('');
+    setLaneNumber('');
+    setOilPattern('');
+    setStance('');
+    setTargetArrow('');
+  }
 
   async function handleSave() {
     if (!token) { setActiveTab('history'); return; }
-    await saveGame({ totalScore: total as number, ballUsed: null, laneNumber: null, oilPattern: null, frames });
+    await saveGame({
+      totalScore:   total as number,
+      ballUsed:     null,
+      laneNumber:   laneNumber ? parseInt(laneNumber) : null,
+      oilPattern:   oilPattern || null,
+      bowlingAlley: bowlingAlley || null,
+      stance:       stance || null,
+      targetArrow:  targetArrow || null,
+      frames,
+    });
     setSaved(true);
   }
 
@@ -126,10 +174,9 @@ export function ScoreScreen() {
     <div className="pb-4">
       <PageHeader title="Scorecard" subtitle="Track your game" emoji="📊" />
 
-      {/* ── Horizontal scorecard ── */}
+      {/* Scorecard */}
       <div className="px-3 mb-3 overflow-x-auto">
-        {/* Frame number row */}
-        <div className="flex mb-0.5" style={{ paddingLeft: 0 }}>
+        <div className="flex mb-0.5">
           {frames.map((_, i) => (
             <div
               key={i}
@@ -141,17 +188,13 @@ export function ScoreScreen() {
           ))}
         </div>
 
-        {/* Frame cells */}
-        <div
-          className="flex rounded-lg overflow-hidden border"
-          style={{ borderColor: 'var(--border)' }}
-        >
+        <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
           {frames.map((frame, i) => {
-            const isActive  = current?.fi === i;
-            const score     = runningScores[i];
-            const is10      = i === 9;
-            const isStrike  = !is10 && frame.ball1 === 'X';
-            const show3rd   = is10 && (frame.ball1 === 'X' || frame.ball2 === '/');
+            const isActive = current?.fi === i;
+            const score    = runningScores[i];
+            const is10     = i === 9;
+            const isStrike = !is10 && frame.ball1 === 'X';
+            const show3rd  = is10 && (frame.ball1 === 'X' || frame.ball2 === '/');
 
             return (
               <div
@@ -165,7 +208,6 @@ export function ScoreScreen() {
                   borderBottom: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
                 }}
               >
-                {/* Ball boxes — top right */}
                 <div className="flex justify-end gap-0.5 pt-1 pr-1">
                   {!isStrike && (
                     <BallBox value={frame.ball1} active={isActive && current?.ball === 'ball1'} />
@@ -182,8 +224,6 @@ export function ScoreScreen() {
                     <BallBox value={frame.ball3} active={false} />
                   )}
                 </div>
-
-                {/* Running score */}
                 <div className="flex-1 flex items-center justify-center pb-1">
                   <span
                     className="font-bold tabular-nums"
@@ -201,9 +241,9 @@ export function ScoreScreen() {
         </div>
       </div>
 
-      {/* ── Total ── */}
+      {/* Total */}
       <div
-        className="mx-3 mb-4 py-2 rounded-xl text-center border"
+        className="mx-3 mb-3 py-2 rounded-xl text-center border"
         style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
       >
         <p className="text-[10px] mb-0.5" style={{ color: 'var(--text-faint)' }}>TOTAL</p>
@@ -212,7 +252,71 @@ export function ScoreScreen() {
         </p>
       </div>
 
-      {/* ── Entry pad ── */}
+      {/* Game Notes toggle */}
+      <div className="px-3 mb-3">
+        <button
+          onClick={() => setNotesOpen(!notesOpen)}
+          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border"
+          style={{ background: 'var(--bg-card)', borderColor: notesOpen ? 'var(--accent)' : 'var(--border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm">📝</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Game Notes</span>
+            {notesFilled > 0 && (
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+              >
+                {notesFilled}
+              </span>
+            )}
+          </div>
+          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{notesOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {notesOpen && (
+          <div
+            className="mt-2 rounded-xl p-4 space-y-3 border"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+          >
+            <NoteField
+              label="🎳 Bowling Alley"
+              value={bowlingAlley}
+              onChange={setBowlingAlley}
+              placeholder="e.g. AMF Bowlero"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <NoteField
+                label="🔢 Lane Pair"
+                value={laneNumber}
+                onChange={setLaneNumber}
+                placeholder="e.g. 7-8"
+                type="number"
+              />
+              <NoteField
+                label="🛢️ Oil Pattern"
+                value={oilPattern}
+                onChange={setOilPattern}
+                placeholder="e.g. Sport 40ft"
+              />
+            </div>
+            <NoteField
+              label="👣 Where You Stood"
+              value={stance}
+              onChange={setStance}
+              placeholder="e.g. Board 25, dots"
+            />
+            <NoteField
+              label="🎯 Arrow / Mark Aiming For"
+              value={targetArrow}
+              onChange={setTargetArrow}
+              placeholder="e.g. 3rd arrow, 10 board"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Entry pad */}
       {current && (
         <div className="px-3">
           <p className="text-[10px] text-center mb-2" style={{ color: 'var(--text-faint)' }}>
@@ -250,7 +354,7 @@ export function ScoreScreen() {
         </div>
       )}
 
-      {/* ── Save / New Game ── */}
+      {/* Save / New Game */}
       {isComplete && (
         <div className="px-3 mt-3 flex gap-2">
           <button
