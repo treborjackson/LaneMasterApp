@@ -52,10 +52,10 @@ model GameSession {
   ballUsed      String?
   laneNumber    Int?
   oilPattern    String?
-  bowlingAlley     String?
+  bowlingAlley     String?  @map("bowling_alley")
   stance           String?
-  targetArrow      String?
-  boardAdjustments String?
+  targetArrow      String?  @map("target_arrow")
+  boardAdjustments String?  @map("board_adjustments")
 
   frames String @default("[]")
 
