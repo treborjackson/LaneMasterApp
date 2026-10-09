@@ -338,7 +338,7 @@ export function ScoreScreen() {
           {/* datalists shared across all inputs */}
           <datalist id="board-list">
             {Array.from({ length: 39 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={String(n)} />
+              <option key={n} value={`Board ${n}`} />
             ))}
           </datalist>
           <datalist id="mark-list">
