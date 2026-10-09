@@ -64,7 +64,11 @@ export async function apiSaveGame(token: string, game: unknown) {
     headers: getHeaders(token),
     body: JSON.stringify(game),
   });
-  if (!res.ok) throw new Error('Failed to save game');
+  if (!res.ok) {
+    let msg = 'Failed to save game';
+    try { msg = (await res.json()).error ?? msg; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
   return res.json();
 }
 
