@@ -51,15 +51,24 @@ async function fetchPageText(url: string): Promise<string> {
     .slice(0, 8000);
 }
 
-async function searchYouTube(query: string): Promise<string> {
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) return '';
+async function findYouTubeId(ballName: string, brand: string): Promise<string> {
+  const response = await anthropic.messages.create({
+    model:      'claude-haiku-4-5-20251001',
+    max_tokens: 64,
+    messages: [{
+      role:    'user',
+      content:
+        `What is the 11-character YouTube video ID for an official or well-known review video of the ${brand} ${ballName} bowling ball? ` +
+        `Reply with ONLY the 11-character video ID (letters, numbers, hyphens, underscores). ` +
+        `If you are not confident in a specific real ID, reply with the single word: none`,
+    }],
+  });
 
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1&key=${apiKey}`;
-  const res  = await fetch(url);
-  if (!res.ok) return '';
-  const data = await res.json();
-  return data?.items?.[0]?.id?.videoId ?? '';
+  const textBlock = response.content.find((b) => b.type === 'text');
+  const id = textBlock?.type === 'text' ? textBlock.text.trim() : '';
+
+  // Validate it looks like a YouTube ID (11 chars, safe characters)
+  return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : '';
 }
 
 async function fetchBallsOfMonth(): Promise<PicksResult> {
@@ -90,7 +99,7 @@ async function fetchBallsOfMonth(): Promise<PicksResult> {
   // Step 2: find a YouTube video ID for each ball
   const picksWithVideo: Pick[] = await Promise.all(
     parsed.picks.map(async (pick) => {
-      const youtubeId = await searchYouTube(`${pick.brand} ${pick.ballName} bowling ball review`).catch(() => '');
+      const youtubeId = await findYouTubeId(pick.ballName, pick.brand).catch(() => '');
       return { ...pick, youtubeId };
     })
   );
