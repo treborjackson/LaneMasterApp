@@ -49,7 +49,8 @@ export function BallPickerScreen() {
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [open, setOpen]           = useState<number | null>(null);
-  const [video, setVideo] = useState<{ youtubeId: string; title: string } | null>(null);
+  const [video, setVideo]               = useState<{ youtubeId: string; title: string } | null>(null);
+  const [videoLoading, setVideoLoading] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/balls-of-month')
@@ -62,13 +63,29 @@ export function BallPickerScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  function openVideo(pick: MonthPick) {
-    // Prefer the video ID stored with the pick (fetched at refresh time)
-    const storedId = pick.youtubeId;
-    const rev      = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
-    const videoId  = storedId || rev?.youtubeId;
+  async function openVideo(pick: MonthPick, index: number) {
+    const rev     = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
+    const videoId = pick.youtubeId || rev?.youtubeId;
+
     if (videoId) {
       setVideo({ youtubeId: videoId, title: `${pick.ballName} Video` });
+      return;
+    }
+
+    // ID not cached yet — ask Claude on the fly
+    setVideoLoading(index);
+    try {
+      const res  = await fetch('/api/youtube-id', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ballName: pick.ballName, brand: pick.brand }),
+      });
+      const data = await res.json();
+      if (data.youtubeId) {
+        setVideo({ youtubeId: data.youtubeId, title: `${pick.ballName} Video` });
+      }
+    } finally {
+      setVideoLoading(null);
     }
   }
 
@@ -116,10 +133,8 @@ export function BallPickerScreen() {
           </div>
 
           {bom.picks.map((pick, i) => {
-            const isOpen   = open === i;
-            const isTop3   = i < 3;
-            const rev      = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
-            const hasVideo = !!(pick.youtubeId || rev?.youtubeId);
+            const isOpen = open === i;
+            const isTop3 = i < 3;
 
             return (
               <WoodCard
@@ -166,9 +181,6 @@ export function BallPickerScreen() {
                       >
                         {MEDAL_LABELS[i]}
                       </span>
-                      {!isOpen && (
-                        <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>▶ video</span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -219,15 +231,14 @@ export function BallPickerScreen() {
 
                     {/* Action buttons */}
                     <div className="flex gap-2">
-                      {hasVideo && (
-                        <button
-                          onClick={() => openVideo(pick)}
-                          className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5"
-                          style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-                        >
-                          ▶ Watch Video
-                        </button>
-                      )}
+                      <button
+                        onClick={() => openVideo(pick, i)}
+                        disabled={videoLoading === i}
+                        className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+                        style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+                      >
+                        {videoLoading === i ? 'Finding video…' : '▶ Watch Video'}
+                      </button>
                       <button
                         onClick={() => setOpen(null)}
                         className="px-4 py-2.5 rounded-lg text-sm border"
