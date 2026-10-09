@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { anthropic } from '@/lib/anthropic';
 
-async function videoExists(id: string): Promise<boolean> {
-  try {
-    const res = await fetch(
-      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`,
-      { method: 'GET' }
-    );
-    return res.ok;
-  } catch {
-    return false;
+async function searchYouTube(query: string): Promise<string | null> {
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept':          'text/html,application/xhtml+xml',
+    },
+  });
+
+  if (!res.ok) return null;
+  const html = await res.text();
+
+  // YouTube embeds video data as JSON in the page — first videoId is the top result
+  const matches = html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g);
+  for (const match of matches) {
+    const id = match[1];
+    // Skip YouTube Shorts and channel IDs — verify it's a real watchable video
+    const check = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+    if (check.ok) return id;
   }
+
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -18,35 +30,9 @@ export async function POST(req: NextRequest) {
   if (!ballName || !brand) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
 
   try {
-    // Ask Claude for up to 3 candidate IDs so we can verify each one
-    const response = await anthropic.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 128,
-      messages: [{
-        role:    'user',
-        content:
-          `Give me up to 3 real YouTube video IDs for review videos of the ${brand} ${ballName} bowling ball. ` +
-          `Reply with ONLY the 11-character IDs separated by spaces (letters, numbers, hyphens, underscores). ` +
-          `If you don't know any real IDs, reply with: none`,
-      }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    const text = textBlock?.type === 'text' ? textBlock.text.trim() : '';
-
-    // Extract all valid-looking IDs from the response
-    const candidates = text
-      .split(/\s+/)
-      .filter((id) => /^[a-zA-Z0-9_-]{11}$/.test(id));
-
-    // Verify each candidate against YouTube's oEmbed endpoint
-    for (const id of candidates) {
-      if (await videoExists(id)) {
-        return NextResponse.json({ youtubeId: id });
-      }
-    }
-
-    return NextResponse.json({ youtubeId: null });
+    const query    = `${brand} ${ballName} bowling ball review`;
+    const videoId  = await searchYouTube(query);
+    return NextResponse.json({ youtubeId: videoId });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });

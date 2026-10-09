@@ -51,35 +51,26 @@ async function fetchPageText(url: string): Promise<string> {
     .slice(0, 8000);
 }
 
-async function videoExists(id: string): Promise<boolean> {
-  try {
-    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 async function findYouTubeId(ballName: string, brand: string): Promise<string> {
-  const response = await anthropic.messages.create({
-    model:      'claude-haiku-4-5-20251001',
-    max_tokens: 128,
-    messages: [{
-      role:    'user',
-      content:
-        `Give me up to 3 real YouTube video IDs for review videos of the ${brand} ${ballName} bowling ball. ` +
-        `Reply with ONLY the 11-character IDs separated by spaces (letters, numbers, hyphens, underscores). ` +
-        `If you don't know any real IDs, reply with: none`,
-    }],
-  });
-
-  const textBlock = response.content.find((b) => b.type === 'text');
-  const text = textBlock?.type === 'text' ? textBlock.text.trim() : '';
-
-  const candidates = text.split(/\s+/).filter((id) => /^[a-zA-Z0-9_-]{11}$/.test(id));
-  for (const id of candidates) {
-    if (await videoExists(id)) return id;
-  }
+  try {
+    const query = `${brand} ${ballName} bowling ball review`;
+    const url   = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const res   = await fetch(url, {
+      headers: {
+        'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept':          'text/html,application/xhtml+xml',
+      },
+    });
+    if (!res.ok) return '';
+    const html = await res.text();
+    const matches = html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g);
+    for (const match of matches) {
+      const id    = match[1];
+      const check = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+      if (check.ok) return id;
+    }
+  } catch { /* ignore */ }
   return '';
 }
 
