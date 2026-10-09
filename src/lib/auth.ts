@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 const SECRET = process.env.NEXTAUTH_SECRET!;
 
 export function signToken(payload: { userId: string; email: string }): string {
-  return jwt.sign(payload, SECRET, { expiresIn: '30d' });
+  return jwt.sign(payload, SECRET, { expiresIn: '365d' });
 }
 
 export function verifyToken(req: NextRequest): string | null {
