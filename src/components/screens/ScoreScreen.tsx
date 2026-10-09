@@ -91,10 +91,17 @@ export function ScoreScreen() {
   const [laneNumber,   setLaneNumber]   = useState(lastLanePair);
   const [oilPattern,   setOilPattern]   = useState('');
 
+  // Starting position
+  const [startBoard, setStartBoard] = useState('');
+  const [startMark,  setStartMark]  = useState('');
+
   // Board & mark tracking
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
   const [addingBoard, setAddingBoard]  = useState('');
   const [addingMark,  setAddingMark]   = useState('');
+  const [editingIdx,  setEditingIdx]   = useState<number | null>(null);
+  const [editBoard,   setEditBoard]    = useState('');
+  const [editMark,    setEditMark]     = useState('');
 
   const current       = nextBall(frames);
   const runningScores = calcRunningScores(frames);
@@ -137,13 +144,30 @@ export function ScoreScreen() {
     setAddingMark('');
   }
 
+  function startEdit(idx: number) {
+    setEditingIdx(idx);
+    setEditBoard(adjustments[idx].board);
+    setEditMark(adjustments[idx].mark);
+  }
+
+  function saveEdit() {
+    if (editingIdx === null) return;
+    setAdjustments((prev) =>
+      prev.map((a, i) => i === editingIdx ? { ...a, board: editBoard.trim(), mark: editMark.trim() } : a)
+    );
+    setEditingIdx(null);
+  }
+
   function newGame() {
     setFrames(initFrames());
     setSaved(false);
     setOilPattern('');
+    setStartBoard('');
+    setStartMark('');
     setAdjustments([]);
     setAddingBoard('');
     setAddingMark('');
+    setEditingIdx(null);
   }
 
   async function handleSave() {
@@ -151,9 +175,13 @@ export function ScoreScreen() {
     setLastBowlingAlley(bowlingAlley);
     setLastLanePair(laneNumber);
 
-    const boardLog = adjustments
-      .map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · Mark ${a.mark}` : ''}`)
-      .join(' | ');
+    const startLine = (startBoard || startMark)
+      ? `Start${startBoard ? ` · Board ${startBoard}` : ''}${startMark ? ` · ${startMark}` : ''}`
+      : '';
+    const boardLog = [
+      startLine,
+      ...adjustments.map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · ${a.mark}` : ''}`),
+    ].filter(Boolean).join(' | ');
 
     await saveGame({
       totalScore:       total as number,
@@ -307,39 +335,93 @@ export function ScoreScreen() {
             ↔️ Board & Mark Tracking
           </p>
 
-          {/* Log of adjustments */}
-          {adjustments.length > 0 && (
-            <div className="space-y-1.5">
-              {adjustments.map((adj, idx) => (
-                <div key={idx} className="flex items-center gap-2 rounded-lg px-2 py-1.5"
+          {/* Starting position */}
+          <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)' }}>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded inline-block"
+              style={{ background: 'var(--bg-muted)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              Starting
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Board</p>
+                <input value={startBoard} onChange={(e) => setStartBoard(e.target.value)}
+                  placeholder="e.g. 25"
+                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
+                <input value={startMark} onChange={(e) => setStartMark(e.target.value)}
+                  placeholder="e.g. 3rd arrow"
+                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Adjustment log */}
+          {adjustments.map((adj, idx) => (
+            <div key={idx}>
+              {editingIdx === idx ? (
+                /* Edit mode */
+                <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px solid var(--accent)' }}>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded inline-block"
+                    style={{ background: 'var(--accent)22', color: 'var(--accent)' }}>
+                    Frame {adj.frame}
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Board</p>
+                      <input value={editBoard} onChange={(e) => setEditBoard(e.target.value)}
+                        className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                        style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
+                      <input value={editMark} onChange={(e) => setEditMark(e.target.value)}
+                        className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                        style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={saveEdit}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-bold"
+                      style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
+                      Save
+                    </button>
+                    <button onClick={() => setEditingIdx(null)}
+                      className="px-3 py-1.5 rounded-lg text-xs border"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* View mode */
+                <div className="flex items-center gap-2 rounded-lg px-2 py-1.5"
                   style={{ background: 'var(--bg-deep)' }}>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
                     style={{ background: 'var(--accent)22', color: 'var(--accent)' }}>
                     F{adj.frame}
                   </span>
-                  {adj.board && (
-                    <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
-                      Board {adj.board}
-                    </span>
-                  )}
-                  {adj.board && adj.mark && (
-                    <span style={{ color: 'var(--text-faint)' }}>·</span>
-                  )}
-                  {adj.mark && (
-                    <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
-                      {adj.mark}
-                    </span>
-                  )}
+                  <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>
+                    {[adj.board ? `Board ${adj.board}` : '', adj.mark].filter(Boolean).join(' · ')}
+                  </span>
+                  <button onClick={() => startEdit(idx)}
+                    className="text-[10px] px-2 py-0.5 rounded border"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                    Edit
+                  </button>
                   <button onClick={() => setAdjustments((p) => p.filter((_, i) => i !== idx))}
-                    className="ml-auto text-xs" style={{ color: 'var(--text-faint)' }}>
+                    className="text-xs" style={{ color: 'var(--text-faint)' }}>
                     ✕
                   </button>
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          ))}
 
-          {/* Add new entry — frame auto-filled */}
+          {/* Add new entry */}
           <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px dashed var(--border)' }}>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-bold px-2 py-1 rounded flex-shrink-0"
@@ -347,7 +429,7 @@ export function ScoreScreen() {
                 Frame {currentFrame}
               </span>
               <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>
-                {isComplete ? 'Game complete' : 'Current frame from scoreboard'}
+                from scoreboard
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2">
