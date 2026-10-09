@@ -67,7 +67,7 @@ export function HistoryScreen() {
 
   return (
     <div className="pb-4">
-      <PageHeader title="Game History" subtitle={`${games.length} game${games.length !== 1 ? 's' : ''} saved`} emoji="📜" />
+      <PageHeader title="Game Log" subtitle={`${games.length} game${games.length !== 1 ? 's' : ''} saved`} emoji="📜" />
 
       {/* Alley filter */}
       {alleys.length > 0 && (
