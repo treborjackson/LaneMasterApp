@@ -51,24 +51,36 @@ async function fetchPageText(url: string): Promise<string> {
     .slice(0, 8000);
 }
 
+async function videoExists(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function findYouTubeId(ballName: string, brand: string): Promise<string> {
   const response = await anthropic.messages.create({
     model:      'claude-haiku-4-5-20251001',
-    max_tokens: 64,
+    max_tokens: 128,
     messages: [{
       role:    'user',
       content:
-        `What is the 11-character YouTube video ID for an official or well-known review video of the ${brand} ${ballName} bowling ball? ` +
-        `Reply with ONLY the 11-character video ID (letters, numbers, hyphens, underscores). ` +
-        `If you are not confident in a specific real ID, reply with the single word: none`,
+        `Give me up to 3 real YouTube video IDs for review videos of the ${brand} ${ballName} bowling ball. ` +
+        `Reply with ONLY the 11-character IDs separated by spaces (letters, numbers, hyphens, underscores). ` +
+        `If you don't know any real IDs, reply with: none`,
     }],
   });
 
   const textBlock = response.content.find((b) => b.type === 'text');
-  const id = textBlock?.type === 'text' ? textBlock.text.trim() : '';
+  const text = textBlock?.type === 'text' ? textBlock.text.trim() : '';
 
-  // Validate it looks like a YouTube ID (11 chars, safe characters)
-  return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : '';
+  const candidates = text.split(/\s+/).filter((id) => /^[a-zA-Z0-9_-]{11}$/.test(id));
+  for (const id of candidates) {
+    if (await videoExists(id)) return id;
+  }
+  return '';
 }
 
 async function fetchBallsOfMonth(): Promise<PicksResult> {

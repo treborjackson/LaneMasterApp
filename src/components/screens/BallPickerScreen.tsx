@@ -83,6 +83,8 @@ export function BallPickerScreen() {
       const data = await res.json();
       if (data.youtubeId) {
         setVideo({ youtubeId: data.youtubeId, title: `${pick.ballName} Video` });
+      } else {
+        alert(`No verified video found for ${pick.ballName} yet.`);
       }
     } finally {
       setVideoLoading(null);
