@@ -29,9 +29,10 @@ export async function POST(req: NextRequest) {
       ballUsed:     body.ballUsed     ?? null,
       laneNumber:   body.laneNumber   ?? null,
       oilPattern:   body.oilPattern   ?? null,
-      bowlingAlley: body.bowlingAlley ?? null,
-      stance:       body.stance       ?? null,
-      targetArrow:  body.targetArrow  ?? null,
+      bowlingAlley:     body.bowlingAlley     ?? null,
+      stance:           body.stance           ?? null,
+      targetArrow:      body.targetArrow      ?? null,
+      boardAdjustments: body.boardAdjustments ?? null,
       frames:       JSON.stringify(body.frames ?? []),
     },
   });

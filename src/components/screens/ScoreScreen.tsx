@@ -27,9 +27,7 @@ function nextBall(frames: Frame[]): { fi: number; ball: 'ball1' | 'ball2' | 'bal
 function validOptions(frames: Frame[], fi: number, ball: 'ball1' | 'ball2' | 'ball3'): string[] {
   const f  = frames[fi];
   const b1 = f.ball1;
-
-  if (ball === 'ball1') return ['X', '9','8','7','6','5','4','3','2','1','-'];
-
+  if (ball === 'ball1') return ['X','9','8','7','6','5','4','3','2','1','-'];
   if (ball === 'ball2') {
     if (fi === 9 && b1 === 'X') return ['X','9','8','7','6','5','4','3','2','1','-'];
     const pins = b1 === '-' ? 10 : b1 === 'X' ? 0 : 10 - (parseInt(b1) || 0);
@@ -37,7 +35,6 @@ function validOptions(frames: Frame[], fi: number, ball: 'ball1' | 'ball2' | 'ba
     for (let p = pins - 1; p >= 1; p--) nums.push(String(p));
     return ['/', ...nums, '-'];
   }
-
   if (ball === 'ball3') {
     const b2 = f.ball2;
     if (b2 === '/') return ['X','9','8','7','6','5','4','3','2','1','-'];
@@ -63,11 +60,7 @@ function BallBox({ value, active }: { value: string; active: boolean }) {
         width: 15, height: 15, fontSize: 9, borderRadius: 2,
         background: strike ? '#c0392b' : spare ? '#2e6da4' : value ? 'var(--bg-deep)' : 'transparent',
         color: strike || spare ? '#fff' : 'var(--text-primary)',
-        border: active
-          ? '1.5px solid var(--accent)'
-          : value
-          ? '1px solid var(--border)'
-          : '1px dashed #3a2a14',
+        border: active ? '1.5px solid var(--accent)' : value ? '1px solid var(--border)' : '1px dashed #3a2a14',
         boxShadow: active ? '0 0 4px var(--accent)' : 'none',
       }}
     >
@@ -76,13 +69,14 @@ function BallBox({ value, active }: { value: string; active: boolean }) {
   );
 }
 
-function NoteField({
-  label, value, onChange, placeholder, type = 'text',
+function Field({
+  label, value, onChange, placeholder, type = 'text', half = false,
 }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string;
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder: string; type?: string; half?: boolean;
 }) {
   return (
-    <div>
+    <div className={half ? '' : 'col-span-2'}>
       <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>{label}</p>
       <input
         type={type}
@@ -97,26 +91,28 @@ function NoteField({
 }
 
 export function ScoreScreen() {
-  const { token, setActiveTab } = useAppStore();
-  const { saveGame }            = useGames();
-  const [frames, setFrames]     = useState<Frame[]>(initFrames());
-  const [saved, setSaved]       = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
+  const {
+    token, setActiveTab,
+    lastBowlingAlley, lastLanePair,
+    setLastBowlingAlley, setLastLanePair,
+  } = useAppStore();
+  const { saveGame } = useGames();
 
-  // Game notes
-  const [bowlingAlley, setBowlingAlley] = useState('');
-  const [laneNumber, setLaneNumber]     = useState('');
-  const [oilPattern, setOilPattern]     = useState('');
-  const [stance, setStance]             = useState('');
-  const [targetArrow, setTargetArrow]   = useState('');
+  const [frames, setFrames] = useState<Frame[]>(initFrames());
+  const [saved, setSaved]   = useState(false);
+
+  // Notes — bowling alley + lane pair pre-filled from last game
+  const [bowlingAlley,     setBowlingAlley]     = useState(lastBowlingAlley);
+  const [laneNumber,       setLaneNumber]       = useState(lastLanePair);
+  const [oilPattern,       setOilPattern]       = useState('');
+  const [stance,           setStance]           = useState('');
+  const [targetArrow,      setTargetArrow]      = useState('');
+  const [boardAdjustments, setBoardAdjustments] = useState('');
 
   const current       = nextBall(frames);
   const runningScores = calcRunningScores(frames);
   const total         = runningScores.filter(Boolean).pop() ?? 0;
   const isComplete    = current === null;
-
-  // Count filled notes to show badge
-  const notesFilled = [bowlingAlley, laneNumber, oilPattern, stance, targetArrow].filter(Boolean).length;
 
   function enter(value: string) {
     if (!current) return;
@@ -146,23 +142,27 @@ export function ScoreScreen() {
   function newGame() {
     setFrames(initFrames());
     setSaved(false);
-    setBowlingAlley('');
-    setLaneNumber('');
+    // Keep bowling alley + lane pair, clear the rest
     setOilPattern('');
     setStance('');
     setTargetArrow('');
+    setBoardAdjustments('');
   }
 
   async function handleSave() {
     if (!token) { setActiveTab('history'); return; }
+    // Persist bowling alley + lane for next game
+    setLastBowlingAlley(bowlingAlley);
+    setLastLanePair(laneNumber);
     await saveGame({
-      totalScore:   total as number,
-      ballUsed:     null,
-      laneNumber:   laneNumber ? parseInt(laneNumber) : null,
-      oilPattern:   oilPattern || null,
-      bowlingAlley: bowlingAlley || null,
-      stance:       stance || null,
-      targetArrow:  targetArrow || null,
+      totalScore:       total as number,
+      ballUsed:         null,
+      laneNumber:       laneNumber ? parseInt(laneNumber) : null,
+      oilPattern:       oilPattern       || null,
+      bowlingAlley:     bowlingAlley     || null,
+      stance:           stance           || null,
+      targetArrow:      targetArrow      || null,
+      boardAdjustments: boardAdjustments || null,
       frames,
     });
     setSaved(true);
@@ -175,7 +175,7 @@ export function ScoreScreen() {
       <PageHeader title="Scorecard" subtitle="Track your game" emoji="📊" />
 
       {/* Scorecard */}
-      <div className="px-3 mb-3 overflow-x-auto">
+      <div className="px-3 mb-2 overflow-x-auto">
         <div className="flex mb-0.5">
           {frames.map((_, i) => (
             <div
@@ -187,7 +187,6 @@ export function ScoreScreen() {
             </div>
           ))}
         </div>
-
         <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
           {frames.map((frame, i) => {
             const isActive = current?.fi === i;
@@ -195,42 +194,29 @@ export function ScoreScreen() {
             const is10     = i === 9;
             const isStrike = !is10 && frame.ball1 === 'X';
             const show3rd  = is10 && (frame.ball1 === 'X' || frame.ball2 === '/');
-
             return (
               <div
                 key={i}
                 className="flex flex-col border-r"
                 style={{
-                  width: is10 ? 58 : 36,
-                  flexShrink: 0,
+                  width: is10 ? 58 : 36, flexShrink: 0,
                   borderColor: 'var(--border)',
                   background: isActive ? 'var(--bg-muted)' : 'var(--bg-card)',
                   borderBottom: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
                 }}
               >
                 <div className="flex justify-end gap-0.5 pt-1 pr-1">
-                  {!isStrike && (
-                    <BallBox value={frame.ball1} active={isActive && current?.ball === 'ball1'} />
-                  )}
-                  {isStrike ? (
-                    <BallBox value={frame.ball1} active={isActive && current?.ball === 'ball1'} />
-                  ) : (
-                    <BallBox value={frame.ball2} active={isActive && current?.ball === 'ball2'} />
-                  )}
-                  {show3rd && (
-                    <BallBox value={frame.ball3} active={isActive && current?.ball === 'ball3'} />
-                  )}
-                  {is10 && !show3rd && frame.ball2 !== '/' && frame.ball1 !== 'X' && (
-                    <BallBox value={frame.ball3} active={false} />
-                  )}
+                  {!isStrike && <BallBox value={frame.ball1} active={isActive && current?.ball === 'ball1'} />}
+                  {isStrike
+                    ? <BallBox value={frame.ball1} active={isActive && current?.ball === 'ball1'} />
+                    : <BallBox value={frame.ball2} active={isActive && current?.ball === 'ball2'} />}
+                  {show3rd && <BallBox value={frame.ball3} active={isActive && current?.ball === 'ball3'} />}
+                  {is10 && !show3rd && frame.ball2 !== '/' && frame.ball1 !== 'X' && <BallBox value={frame.ball3} active={false} />}
                 </div>
                 <div className="flex-1 flex items-center justify-center pb-1">
                   <span
                     className="font-bold tabular-nums"
-                    style={{
-                      fontSize: score !== null && score >= 100 ? 11 : 13,
-                      color: score !== null ? 'var(--text-primary)' : 'transparent',
-                    }}
+                    style={{ fontSize: score !== null && score >= 100 ? 11 : 13, color: score !== null ? 'var(--text-primary)' : 'transparent' }}
                   >
                     {score ?? 0}
                   </span>
@@ -238,6 +224,38 @@ export function ScoreScreen() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Game Notes — directly below scorecard */}
+      <div
+        className="mx-3 mb-3 rounded-xl border p-3"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      >
+        <p className="text-[10px] font-bold mb-3 uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
+          📝 Game Notes
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="🎳 Bowling Alley"        value={bowlingAlley}     onChange={setBowlingAlley}     placeholder="e.g. AMF Bowlero" />
+          <Field label="🔢 Lane Pair"             value={laneNumber}       onChange={setLaneNumber}       placeholder="e.g. 7-8"   half />
+          <Field label="🛢️ Oil Pattern"           value={oilPattern}       onChange={setOilPattern}       placeholder="e.g. Sport 40ft" half />
+          <Field label="👣 Starting Board"        value={stance}           onChange={setStance}           placeholder="e.g. Board 25" half />
+          <Field label="🎯 Arrow / Mark"          value={targetArrow}      onChange={setTargetArrow}      placeholder="e.g. 3rd arrow" half />
+        </div>
+
+        {/* Board adjustments — full width text area */}
+        <div className="mt-2">
+          <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>
+            ↔️ Board Adjustments
+          </p>
+          <textarea
+            value={boardAdjustments}
+            onChange={(e) => setBoardAdjustments(e.target.value)}
+            placeholder="e.g. Frame 4: moved right 2 boards. Frame 7: back to original."
+            rows={2}
+            className="w-full px-3 py-2 rounded-lg text-sm border outline-none resize-none"
+            style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+          />
         </div>
       </div>
 
@@ -252,70 +270,6 @@ export function ScoreScreen() {
         </p>
       </div>
 
-      {/* Game Notes toggle */}
-      <div className="px-3 mb-3">
-        <button
-          onClick={() => setNotesOpen(!notesOpen)}
-          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border"
-          style={{ background: 'var(--bg-card)', borderColor: notesOpen ? 'var(--accent)' : 'var(--border)' }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-sm">📝</span>
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Game Notes</span>
-            {notesFilled > 0 && (
-              <span
-                className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-              >
-                {notesFilled}
-              </span>
-            )}
-          </div>
-          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{notesOpen ? '▲' : '▼'}</span>
-        </button>
-
-        {notesOpen && (
-          <div
-            className="mt-2 rounded-xl p-4 space-y-3 border"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-          >
-            <NoteField
-              label="🎳 Bowling Alley"
-              value={bowlingAlley}
-              onChange={setBowlingAlley}
-              placeholder="e.g. AMF Bowlero"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <NoteField
-                label="🔢 Lane Pair"
-                value={laneNumber}
-                onChange={setLaneNumber}
-                placeholder="e.g. 7-8"
-                type="number"
-              />
-              <NoteField
-                label="🛢️ Oil Pattern"
-                value={oilPattern}
-                onChange={setOilPattern}
-                placeholder="e.g. Sport 40ft"
-              />
-            </div>
-            <NoteField
-              label="👣 Where You Stood"
-              value={stance}
-              onChange={setStance}
-              placeholder="e.g. Board 25, dots"
-            />
-            <NoteField
-              label="🎯 Arrow / Mark Aiming For"
-              value={targetArrow}
-              onChange={setTargetArrow}
-              placeholder="e.g. 3rd arrow, 10 board"
-            />
-          </div>
-        )}
-      </div>
-
       {/* Entry pad */}
       {current && (
         <div className="px-3">
@@ -323,7 +277,6 @@ export function ScoreScreen() {
             Frame {current.fi + 1} &nbsp;·&nbsp;
             {current.ball === 'ball1' ? '1st ball' : current.ball === 'ball2' ? '2nd ball' : '3rd ball'}
           </p>
-
           <div className="grid grid-cols-6 gap-1.5 mb-2">
             {options.map((opt) => (
               <button
@@ -331,10 +284,7 @@ export function ScoreScreen() {
                 onClick={() => enter(opt)}
                 className="py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform"
                 style={{
-                  background:
-                    opt === 'X' ? '#c0392b'
-                    : opt === '/' ? '#2e6da4'
-                    : 'var(--bg-card)',
+                  background: opt === 'X' ? '#c0392b' : opt === '/' ? '#2e6da4' : 'var(--bg-card)',
                   color: opt === 'X' || opt === '/' ? '#fff' : 'var(--text-primary)',
                   border: '1px solid var(--border)',
                 }}
@@ -343,7 +293,6 @@ export function ScoreScreen() {
               </button>
             ))}
           </div>
-
           <button
             onClick={undoLast}
             className="w-full py-2 rounded-xl text-xs border"

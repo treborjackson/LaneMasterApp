@@ -12,8 +12,9 @@ export interface GameSession {
   ballUsed:     string | null;
   laneNumber:   number | null;
   oilPattern:   string | null;
-  bowlingAlley: string | null;
-  stance:       string | null;
-  targetArrow:  string | null;
-  frames:       Frame[];
+  bowlingAlley:     string | null;
+  stance:           string | null;
+  targetArrow:      string | null;
+  boardAdjustments: string | null;
+  frames:           Frame[];
 }

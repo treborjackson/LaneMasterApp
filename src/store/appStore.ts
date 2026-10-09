@@ -22,6 +22,11 @@ interface AppState {
   setCoachMessages: (msgs: CoachMessage[]) => void;
   resetCoach:       () => void;
 
+  lastBowlingAlley: string;
+  lastLanePair:     string;
+  setLastBowlingAlley: (v: string) => void;
+  setLastLanePair:     (v: string) => void;
+
   favBrands:   string[];
   toggleBrand: (brand: string) => void;
   clearBrands: () => void;
@@ -52,6 +57,11 @@ export const useAppStore = create<AppState>()(
       setGoals:         (goals) => set({ goals }),
       setCoachMessages: (msgs)  => set({ coachMessages: msgs }),
       resetCoach:       () => set({ bowlingStyle: null, skillLevel: null, handedness: null, goals: [], coachMessages: [] }),
+
+      lastBowlingAlley: '',
+      lastLanePair:     '',
+      setLastBowlingAlley: (v) => set({ lastBowlingAlley: v }),
+      setLastLanePair:     (v) => set({ lastLanePair: v }),
 
       favBrands:   [],
       toggleBrand: (brand) =>
