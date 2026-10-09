@@ -455,7 +455,7 @@ export function ScoreScreen() {
                     Frame {adj.frame}
                   </span>
                   <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>
-                    {[adj.board ? `Standing ${adj.board}` : '', adj.mark].filter(Boolean).join(' · ')}
+                    {[adj.board ? `Standing ${adj.board}` : '', adj.mark ? `Mark ${adj.mark}` : ''].filter(Boolean).join(' · ')}
                   </span>
                   <button onClick={() => startEdit(idx)}
                     className="text-[10px] px-2 py-0.5 rounded border"
