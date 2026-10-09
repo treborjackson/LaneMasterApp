@@ -7,7 +7,7 @@ const TABS = [
   { id: 'oil',     label: 'Oil',     emoji: '🛢️'  },
   { id: 'coach',   label: 'Coach',   emoji: '🧑‍🏫' },
   { id: 'form',    label: 'Form',    emoji: '📸'  },
-  { id: 'score',   label: 'Score',   emoji: '📊'  },
+  { id: 'score',   label: 'Game Notes', emoji: '📊'  },
   { id: 'history', label: 'Game Log', emoji: '📜'  },
 ];
 
