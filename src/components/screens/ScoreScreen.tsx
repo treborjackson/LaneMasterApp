@@ -125,6 +125,7 @@ export function ScoreScreen() {
   const {
     token, setActiveTab,
     lastBowlingAlley, lastLanePair,
+    savedAlleys, addAlley,
     setLastBowlingAlley, setLastLanePair,
   } = useAppStore();
   const { saveGame } = useGames();
@@ -245,7 +246,9 @@ export function ScoreScreen() {
         boardAdjustments: boardLog     || null,
         frames,
       });
+      if (bowlingAlley) addAlley(bowlingAlley);
       setSaved(true);
+      setTimeout(() => newGame(), 1500);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to save game. Please try again.');
     } finally {
@@ -371,17 +374,32 @@ export function ScoreScreen() {
             Session Info
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: '🎳 Bowling Alley', val: bowlingAlley, set: setBowlingAlley, ph: 'e.g. AMF Bowlero' },
-              { label: '🔢 Lane Pair',     val: laneNumber,   set: setLaneNumber,   ph: 'e.g. 7-8' },
-            ].map(({ label, val, set, ph }) => (
-              <div key={label}>
-                <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>{label}</p>
-                <input value={val} onChange={(e) => set(e.target.value)} placeholder={ph}
+            <div>
+              <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🎳 Bowling Alley</p>
+              {savedAlleys.length > 0 ? (
+                <select value={bowlingAlley} onChange={(e) => setBowlingAlley(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                  <option value="">— Select or type below —</option>
+                  {savedAlleys.map((a) => <option key={a} value={a}>{a}</option>)}
+                  <option value="__new__">+ Add new alley…</option>
+                </select>
+              ) : null}
+              {(savedAlleys.length === 0 || bowlingAlley === '__new__' || (bowlingAlley && !savedAlleys.includes(bowlingAlley))) && (
+                <input
+                  value={bowlingAlley === '__new__' ? '' : bowlingAlley}
+                  onChange={(e) => setBowlingAlley(e.target.value)}
+                  placeholder="e.g. AMF Bowlero"
+                  className="w-full px-3 py-2 rounded-lg text-sm border outline-none mt-1"
                   style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
-              </div>
-            ))}
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🔢 Lane Pair</p>
+              <input value={laneNumber} onChange={(e) => setLaneNumber(e.target.value)} placeholder="e.g. 7-8"
+                className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+                style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            </div>
           </div>
           <div>
             <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🛢️ Oil Pattern</p>

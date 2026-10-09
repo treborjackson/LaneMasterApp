@@ -24,8 +24,10 @@ interface AppState {
 
   lastBowlingAlley: string;
   lastLanePair:     string;
+  savedAlleys:      string[];
   setLastBowlingAlley: (v: string) => void;
   setLastLanePair:     (v: string) => void;
+  addAlley:            (v: string) => void;
 
   favBrands:   string[];
   toggleBrand: (brand: string) => void;
@@ -60,8 +62,12 @@ export const useAppStore = create<AppState>()(
 
       lastBowlingAlley: '',
       lastLanePair:     '',
+      savedAlleys:      [],
       setLastBowlingAlley: (v) => set({ lastBowlingAlley: v }),
       setLastLanePair:     (v) => set({ lastLanePair: v }),
+      addAlley: (v) => set((s) => ({
+        savedAlleys: s.savedAlleys.includes(v) ? s.savedAlleys : [...s.savedAlleys, v],
+      })),
 
       favBrands:   [],
       toggleBrand: (brand) =>
