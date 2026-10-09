@@ -7,7 +7,6 @@ import { BottomTabBar } from './BottomTabBar';
 import { BallPickerScreen } from '@/components/screens/BallPickerScreen';
 import { OilPatternScreen } from '@/components/screens/OilPatternScreen';
 import { CoachScreen } from '@/components/screens/CoachScreen';
-import { FormAnalyzerScreen } from '@/components/screens/FormAnalyzerScreen';
 import { ScoreScreen } from '@/components/screens/ScoreScreen';
 import { HistoryScreen } from '@/components/screens/HistoryScreen';
 import { AdminScreen } from '@/components/screens/AdminScreen';
@@ -16,7 +15,6 @@ const SCREENS: Record<string, React.ReactNode> = {
   picker:  <BallPickerScreen />,
   oil:     <OilPatternScreen />,
   coach:   <CoachScreen />,
-  form:    <FormAnalyzerScreen />,
   score:   <ScoreScreen />,
   history: <HistoryScreen />,
   admin:   <AdminScreen />,
