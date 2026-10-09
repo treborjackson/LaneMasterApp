@@ -332,8 +332,27 @@ export function ScoreScreen() {
         <div className="rounded-xl border p-3 space-y-2"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
           <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
-            ↔️ Board & Mark Tracking
+            ↔️ Standing On & Mark Tracking
           </p>
+
+          {/* datalists shared across all inputs */}
+          <datalist id="board-list">
+            {Array.from({ length: 39 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={String(n)} />
+            ))}
+          </datalist>
+          <datalist id="mark-list">
+            <option value="1st Arrow (board 5)" />
+            <option value="2nd Arrow (board 10)" />
+            <option value="3rd Arrow (board 15)" />
+            <option value="4th Arrow (board 20)" />
+            <option value="5th Arrow (board 25)" />
+            <option value="6th Arrow (board 30)" />
+            <option value="7th Arrow (board 35)" />
+            {Array.from({ length: 39 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={`Board ${n}`} />
+            ))}
+          </datalist>
 
           {/* Adjustment log */}
           {adjustments.map((adj, idx) => (
@@ -347,14 +366,16 @@ export function ScoreScreen() {
                   </span>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Board</p>
-                      <input value={editBoard} onChange={(e) => setEditBoard(e.target.value)}
+                      <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
+                      <input list="board-list" value={editBoard} onChange={(e) => setEditBoard(e.target.value)}
+                        placeholder="e.g. 22"
                         className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
                         style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
                     </div>
                     <div>
                       <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                      <input value={editMark} onChange={(e) => setEditMark(e.target.value)}
+                      <input list="mark-list" value={editMark} onChange={(e) => setEditMark(e.target.value)}
+                        placeholder="e.g. 3rd Arrow"
                         className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
                         style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
                     </div>
@@ -381,7 +402,7 @@ export function ScoreScreen() {
                     F{adj.frame}
                   </span>
                   <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>
-                    {[adj.board ? `Board ${adj.board}` : '', adj.mark].filter(Boolean).join(' · ')}
+                    {[adj.board ? `Standing ${adj.board}` : '', adj.mark].filter(Boolean).join(' · ')}
                   </span>
                   <button onClick={() => startEdit(idx)}
                     className="text-[10px] px-2 py-0.5 rounded border"
@@ -410,8 +431,8 @@ export function ScoreScreen() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Board</p>
-                <input value={addingBoard} onChange={(e) => setAddingBoard(e.target.value)}
+                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
+                <input list="board-list" value={addingBoard} onChange={(e) => setAddingBoard(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && logAdjustment()}
                   placeholder="e.g. 22"
                   className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
@@ -419,9 +440,9 @@ export function ScoreScreen() {
               </div>
               <div>
                 <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                <input value={addingMark} onChange={(e) => setAddingMark(e.target.value)}
+                <input list="mark-list" value={addingMark} onChange={(e) => setAddingMark(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && logAdjustment()}
-                  placeholder="e.g. 3rd arrow"
+                  placeholder="e.g. 3rd Arrow"
                   className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
                   style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
               </div>
