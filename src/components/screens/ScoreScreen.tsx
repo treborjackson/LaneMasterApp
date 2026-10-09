@@ -69,25 +69,9 @@ function BallBox({ value, active }: { value: string; active: boolean }) {
   );
 }
 
-function Field({
-  label, value, onChange, placeholder, type = 'text', half = false,
-}: {
-  label: string; value: string; onChange: (v: string) => void;
-  placeholder: string; type?: string; half?: boolean;
-}) {
-  return (
-    <div className={half ? '' : 'col-span-2'}>
-      <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>{label}</p>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
-        style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-      />
-    </div>
-  );
+interface BoardAdjustment {
+  frame: number;
+  board: string;
 }
 
 export function ScoreScreen() {
@@ -101,18 +85,19 @@ export function ScoreScreen() {
   const [frames, setFrames] = useState<Frame[]>(initFrames());
   const [saved, setSaved]   = useState(false);
 
-  // Notes — bowling alley + lane pair pre-filled from last game
-  const [bowlingAlley,     setBowlingAlley]     = useState(lastBowlingAlley);
-  const [laneNumber,       setLaneNumber]       = useState(lastLanePair);
-  const [oilPattern,       setOilPattern]       = useState('');
-  const [stance,           setStance]           = useState('');
-  const [targetArrow,      setTargetArrow]      = useState('');
-  const [boardAdjustments, setBoardAdjustments] = useState('');
+  const [bowlingAlley,  setBowlingAlley]  = useState(lastBowlingAlley);
+  const [laneNumber,    setLaneNumber]    = useState(lastLanePair);
+  const [oilPattern,    setOilPattern]    = useState('');
+  const [startingBoard, setStartingBoard] = useState('');
+  const [targetArrow,   setTargetArrow]   = useState('');
+  const [adjustments,   setAdjustments]   = useState<BoardAdjustment[]>([]);
+  const [newBoard,      setNewBoard]      = useState('');
 
   const current       = nextBall(frames);
   const runningScores = calcRunningScores(frames);
   const total         = runningScores.filter(Boolean).pop() ?? 0;
   const isComplete    = current === null;
+  const currentFrame  = current ? current.fi + 1 : 10;
 
   function enter(value: string) {
     if (!current) return;
@@ -139,30 +124,45 @@ export function ScoreScreen() {
     setSaved(false);
   }
 
+  function addAdjustment() {
+    if (!newBoard.trim()) return;
+    setAdjustments((prev) => [...prev, { frame: currentFrame, board: newBoard.trim() }]);
+    setNewBoard('');
+  }
+
+  function removeAdjustment(index: number) {
+    setAdjustments((prev) => prev.filter((_, i) => i !== index));
+  }
+
   function newGame() {
     setFrames(initFrames());
     setSaved(false);
-    // Keep bowling alley + lane pair, clear the rest
     setOilPattern('');
-    setStance('');
+    setStartingBoard('');
     setTargetArrow('');
-    setBoardAdjustments('');
+    setAdjustments([]);
+    setNewBoard('');
   }
 
   async function handleSave() {
     if (!token) { setActiveTab('history'); return; }
-    // Persist bowling alley + lane for next game
     setLastBowlingAlley(bowlingAlley);
     setLastLanePair(laneNumber);
+
+    const boardLog = [
+      startingBoard ? `Start: Board ${startingBoard}` : '',
+      ...adjustments.map((a) => `Frame ${a.frame}: Board ${a.board}`),
+    ].filter(Boolean).join(' · ');
+
     await saveGame({
       totalScore:       total as number,
       ballUsed:         null,
       laneNumber:       laneNumber ? parseInt(laneNumber) : null,
-      oilPattern:       oilPattern       || null,
-      bowlingAlley:     bowlingAlley     || null,
-      stance:           stance           || null,
-      targetArrow:      targetArrow      || null,
-      boardAdjustments: boardAdjustments || null,
+      oilPattern:       oilPattern    || null,
+      bowlingAlley:     bowlingAlley  || null,
+      stance:           startingBoard ? `Board ${startingBoard}` : null,
+      targetArrow:      targetArrow   || null,
+      boardAdjustments: boardLog      || null,
       frames,
     });
     setSaved(true);
@@ -171,7 +171,7 @@ export function ScoreScreen() {
   const options = current ? validOptions(frames, current.fi, current.ball) : [];
 
   return (
-    <div className="pb-4">
+    <div className="pb-6">
       <PageHeader title="Scorecard" subtitle="Track your game" emoji="📊" />
 
       {/* Scorecard */}
@@ -227,38 +227,6 @@ export function ScoreScreen() {
         </div>
       </div>
 
-      {/* Game Notes — directly below scorecard */}
-      <div
-        className="mx-3 mb-3 rounded-xl border p-3"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-      >
-        <p className="text-[10px] font-bold mb-3 uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
-          📝 Game Notes
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="🎳 Bowling Alley"        value={bowlingAlley}     onChange={setBowlingAlley}     placeholder="e.g. AMF Bowlero" />
-          <Field label="🔢 Lane Pair"             value={laneNumber}       onChange={setLaneNumber}       placeholder="e.g. 7-8"   half />
-          <Field label="🛢️ Oil Pattern"           value={oilPattern}       onChange={setOilPattern}       placeholder="e.g. Sport 40ft" half />
-          <Field label="👣 Starting Board"        value={stance}           onChange={setStance}           placeholder="e.g. Board 25" half />
-          <Field label="🎯 Arrow / Mark"          value={targetArrow}      onChange={setTargetArrow}      placeholder="e.g. 3rd arrow" half />
-        </div>
-
-        {/* Board adjustments — full width text area */}
-        <div className="mt-2">
-          <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>
-            ↔️ Board Adjustments
-          </p>
-          <textarea
-            value={boardAdjustments}
-            onChange={(e) => setBoardAdjustments(e.target.value)}
-            placeholder="e.g. Frame 4: moved right 2 boards. Frame 7: back to original."
-            rows={2}
-            className="w-full px-3 py-2 rounded-lg text-sm border outline-none resize-none"
-            style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-          />
-        </div>
-      </div>
-
       {/* Total */}
       <div
         className="mx-3 mb-3 py-2 rounded-xl text-center border"
@@ -272,7 +240,7 @@ export function ScoreScreen() {
 
       {/* Entry pad */}
       {current && (
-        <div className="px-3">
+        <div className="px-3 mb-3">
           <p className="text-[10px] text-center mb-2" style={{ color: 'var(--text-faint)' }}>
             Frame {current.fi + 1} &nbsp;·&nbsp;
             {current.ball === 'ball1' ? '1st ball' : current.ball === 'ball2' ? '2nd ball' : '3rd ball'}
@@ -305,7 +273,7 @@ export function ScoreScreen() {
 
       {/* Save / New Game */}
       {isComplete && (
-        <div className="px-3 mt-3 flex gap-2">
+        <div className="px-3 mb-4 flex gap-2">
           <button
             onClick={handleSave}
             disabled={saved}
@@ -323,6 +291,133 @@ export function ScoreScreen() {
           </button>
         </div>
       )}
+
+      {/* ── Game Notes ── */}
+      <div className="px-3 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
+          📝 Game Notes
+        </p>
+
+        {/* Bowling alley + lane — persist between games */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🎳 Bowling Alley</p>
+            <input
+              value={bowlingAlley} onChange={(e) => setBowlingAlley(e.target.value)}
+              placeholder="e.g. AMF Bowlero"
+              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🔢 Lane Pair</p>
+            <input
+              value={laneNumber} onChange={(e) => setLaneNumber(e.target.value)}
+              placeholder="e.g. 7-8"
+              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+          </div>
+        </div>
+
+        {/* Oil + target */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🛢️ Oil Pattern</p>
+            <input
+              value={oilPattern} onChange={(e) => setOilPattern(e.target.value)}
+              placeholder="e.g. Sport 40ft"
+              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🎯 Arrow / Mark</p>
+            <input
+              value={targetArrow} onChange={(e) => setTargetArrow(e.target.value)}
+              placeholder="e.g. 3rd arrow"
+              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+          </div>
+        </div>
+
+        {/* Board tracking */}
+        <div
+          className="rounded-xl border p-3 space-y-3"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+            ↔️ Board Tracking
+          </p>
+
+          {/* Starting board */}
+          <div className="flex items-center gap-2">
+            <div
+              className="text-[10px] px-2 py-1 rounded-lg font-semibold flex-shrink-0"
+              style={{ background: 'var(--bg-deep)', color: 'var(--accent)' }}
+            >
+              Start
+            </div>
+            <input
+              value={startingBoard} onChange={(e) => setStartingBoard(e.target.value)}
+              placeholder="Starting board (e.g. 25)"
+              className="flex-1 px-3 py-1.5 rounded-lg text-sm border outline-none"
+              style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+          </div>
+
+          {/* Existing adjustments */}
+          {adjustments.map((adj, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <div
+                className="text-[10px] px-2 py-1 rounded-lg font-semibold flex-shrink-0"
+                style={{ background: 'var(--accent)22', color: 'var(--accent)' }}
+              >
+                Frame {adj.frame}
+              </div>
+              <span className="flex-1 text-sm" style={{ color: 'var(--text-primary)' }}>
+                Board {adj.board}
+              </span>
+              <button
+                onClick={() => removeAdjustment(idx)}
+                className="text-xs px-2 py-1 rounded-lg"
+                style={{ color: 'var(--red)', background: 'var(--bg-deep)' }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          {/* Add new adjustment */}
+          <div className="flex items-center gap-2">
+            <div
+              className="text-[10px] px-2 py-1 rounded-lg font-semibold flex-shrink-0"
+              style={{ background: 'var(--bg-muted)', color: 'var(--text-faint)', border: '1px dashed var(--border)' }}
+            >
+              Frame {currentFrame}
+            </div>
+            <input
+              value={newBoard} onChange={(e) => setNewBoard(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addAdjustment()}
+              placeholder="New board (e.g. 22)"
+              className="flex-1 px-3 py-1.5 rounded-lg text-sm border outline-none"
+              style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+            />
+            <button
+              onClick={addAdjustment}
+              disabled={!newBoard.trim()}
+              className="px-3 py-1.5 rounded-lg text-sm font-bold disabled:opacity-40"
+              style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
+            >
+              + Add
+            </button>
+          </div>
+          <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>
+            Frame number updates as you bowl — tap + Add whenever you move.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
