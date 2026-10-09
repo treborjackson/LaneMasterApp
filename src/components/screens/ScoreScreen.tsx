@@ -35,11 +35,11 @@ function ComboInput({
     : options;
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
+    function handleOutside(e: PointerEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
   }, []);
 
   return (
@@ -56,7 +56,7 @@ function ComboInput({
         />
         <button
           type="button"
-          onMouseDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+          onPointerDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
           className="px-2 flex items-center"
           style={{ color: 'var(--text-faint)', borderLeft: '1px solid var(--border)' }}>
           ▾
@@ -69,7 +69,7 @@ function ComboInput({
             <button
               key={opt}
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
+              onPointerDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
               className="w-full text-left px-3 py-2 text-sm"
               style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>
               {opt}
