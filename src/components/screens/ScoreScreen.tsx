@@ -69,9 +69,10 @@ function BallBox({ value, active }: { value: string; active: boolean }) {
   );
 }
 
-interface BoardAdjustment {
+interface Adjustment {
   frame: number;
   board: string;
+  mark:  string;
 }
 
 export function ScoreScreen() {
@@ -85,13 +86,15 @@ export function ScoreScreen() {
   const [frames, setFrames] = useState<Frame[]>(initFrames());
   const [saved, setSaved]   = useState(false);
 
-  const [bowlingAlley,  setBowlingAlley]  = useState(lastBowlingAlley);
-  const [laneNumber,    setLaneNumber]    = useState(lastLanePair);
-  const [oilPattern,    setOilPattern]    = useState('');
-  const [startingBoard, setStartingBoard] = useState('');
-  const [targetArrow,   setTargetArrow]   = useState('');
-  const [adjustments,   setAdjustments]   = useState<BoardAdjustment[]>([]);
-  const [newBoard,      setNewBoard]      = useState('');
+  // Fixed session info
+  const [bowlingAlley, setBowlingAlley] = useState(lastBowlingAlley);
+  const [laneNumber,   setLaneNumber]   = useState(lastLanePair);
+  const [oilPattern,   setOilPattern]   = useState('');
+
+  // Board & mark tracking
+  const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [addingBoard, setAddingBoard]  = useState('');
+  const [addingMark,  setAddingMark]   = useState('');
 
   const current       = nextBall(frames);
   const runningScores = calcRunningScores(frames);
@@ -124,24 +127,23 @@ export function ScoreScreen() {
     setSaved(false);
   }
 
-  function addAdjustment() {
-    if (!newBoard.trim()) return;
-    setAdjustments((prev) => [...prev, { frame: currentFrame, board: newBoard.trim() }]);
-    setNewBoard('');
-  }
-
-  function removeAdjustment(index: number) {
-    setAdjustments((prev) => prev.filter((_, i) => i !== index));
+  function logAdjustment() {
+    if (!addingBoard.trim() && !addingMark.trim()) return;
+    setAdjustments((prev) => [
+      ...prev,
+      { frame: currentFrame, board: addingBoard.trim(), mark: addingMark.trim() },
+    ]);
+    setAddingBoard('');
+    setAddingMark('');
   }
 
   function newGame() {
     setFrames(initFrames());
     setSaved(false);
     setOilPattern('');
-    setStartingBoard('');
-    setTargetArrow('');
     setAdjustments([]);
-    setNewBoard('');
+    setAddingBoard('');
+    setAddingMark('');
   }
 
   async function handleSave() {
@@ -149,20 +151,19 @@ export function ScoreScreen() {
     setLastBowlingAlley(bowlingAlley);
     setLastLanePair(laneNumber);
 
-    const boardLog = [
-      startingBoard ? `Start: Board ${startingBoard}` : '',
-      ...adjustments.map((a) => `Frame ${a.frame}: Board ${a.board}`),
-    ].filter(Boolean).join(' · ');
+    const boardLog = adjustments
+      .map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · Mark ${a.mark}` : ''}`)
+      .join(' | ');
 
     await saveGame({
       totalScore:       total as number,
       ballUsed:         null,
       laneNumber:       laneNumber ? parseInt(laneNumber) : null,
-      oilPattern:       oilPattern    || null,
-      bowlingAlley:     bowlingAlley  || null,
-      stance:           startingBoard ? `Board ${startingBoard}` : null,
-      targetArrow:      targetArrow   || null,
-      boardAdjustments: boardLog      || null,
+      oilPattern:       oilPattern   || null,
+      bowlingAlley:     bowlingAlley || null,
+      stance:           null,
+      targetArrow:      null,
+      boardAdjustments: boardLog     || null,
       frames,
     });
     setSaved(true);
@@ -171,18 +172,15 @@ export function ScoreScreen() {
   const options = current ? validOptions(frames, current.fi, current.ball) : [];
 
   return (
-    <div className="pb-6">
+    <div className="pb-8">
       <PageHeader title="Scorecard" subtitle="Track your game" emoji="📊" />
 
       {/* Scorecard */}
       <div className="px-3 mb-2 overflow-x-auto">
         <div className="flex mb-0.5">
           {frames.map((_, i) => (
-            <div
-              key={i}
-              className="text-center text-[9px] font-semibold"
-              style={{ width: i === 9 ? 58 : 36, color: 'var(--text-faint)', flexShrink: 0 }}
-            >
+            <div key={i} className="text-center text-[9px] font-semibold"
+              style={{ width: i === 9 ? 58 : 36, color: 'var(--text-faint)', flexShrink: 0 }}>
               {i + 1}
             </div>
           ))}
@@ -195,16 +193,12 @@ export function ScoreScreen() {
             const isStrike = !is10 && frame.ball1 === 'X';
             const show3rd  = is10 && (frame.ball1 === 'X' || frame.ball2 === '/');
             return (
-              <div
-                key={i}
-                className="flex flex-col border-r"
+              <div key={i} className="flex flex-col border-r"
                 style={{
-                  width: is10 ? 58 : 36, flexShrink: 0,
-                  borderColor: 'var(--border)',
+                  width: is10 ? 58 : 36, flexShrink: 0, borderColor: 'var(--border)',
                   background: isActive ? 'var(--bg-muted)' : 'var(--bg-card)',
                   borderBottom: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
-                }}
-              >
+                }}>
                 <div className="flex justify-end gap-0.5 pt-1 pr-1">
                   {!isStrike && <BallBox value={frame.ball1} active={isActive && current?.ball === 'ball1'} />}
                   {isStrike
@@ -214,10 +208,8 @@ export function ScoreScreen() {
                   {is10 && !show3rd && frame.ball2 !== '/' && frame.ball1 !== 'X' && <BallBox value={frame.ball3} active={false} />}
                 </div>
                 <div className="flex-1 flex items-center justify-center pb-1">
-                  <span
-                    className="font-bold tabular-nums"
-                    style={{ fontSize: score !== null && score >= 100 ? 11 : 13, color: score !== null ? 'var(--text-primary)' : 'transparent' }}
-                  >
+                  <span className="font-bold tabular-nums"
+                    style={{ fontSize: score !== null && score >= 100 ? 11 : 13, color: score !== null ? 'var(--text-primary)' : 'transparent' }}>
                     {score ?? 0}
                   </span>
                 </div>
@@ -228,10 +220,8 @@ export function ScoreScreen() {
       </div>
 
       {/* Total */}
-      <div
-        className="mx-3 mb-3 py-2 rounded-xl text-center border"
-        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-      >
+      <div className="mx-3 mb-3 py-2 rounded-xl text-center border"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
         <p className="text-[10px] mb-0.5" style={{ color: 'var(--text-faint)' }}>TOTAL</p>
         <p className="text-5xl font-bold leading-none" style={{ color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
           {total}
@@ -247,25 +237,19 @@ export function ScoreScreen() {
           </p>
           <div className="grid grid-cols-6 gap-1.5 mb-2">
             {options.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => enter(opt)}
+              <button key={opt} onClick={() => enter(opt)}
                 className="py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform"
                 style={{
                   background: opt === 'X' ? '#c0392b' : opt === '/' ? '#2e6da4' : 'var(--bg-card)',
                   color: opt === 'X' || opt === '/' ? '#fff' : 'var(--text-primary)',
                   border: '1px solid var(--border)',
-                }}
-              >
+                }}>
                 {opt}
               </button>
             ))}
           </div>
-          <button
-            onClick={undoLast}
-            className="w-full py-2 rounded-xl text-xs border"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-faint)', background: 'var(--bg-muted)' }}
-          >
+          <button onClick={undoLast} className="w-full py-2 rounded-xl text-xs border"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-faint)', background: 'var(--bg-muted)' }}>
             ← Undo
           </button>
         </div>
@@ -274,19 +258,13 @@ export function ScoreScreen() {
       {/* Save / New Game */}
       {isComplete && (
         <div className="px-3 mb-4 flex gap-2">
-          <button
-            onClick={handleSave}
-            disabled={saved}
+          <button onClick={handleSave} disabled={saved}
             className="flex-1 py-3 rounded-xl font-bold text-sm disabled:opacity-50"
-            style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-          >
+            style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
             {saved ? '✅ Saved' : '💾 Save Game'}
           </button>
-          <button
-            onClick={newGame}
-            className="px-4 py-3 rounded-xl text-sm border"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-          >
+          <button onClick={newGame} className="px-4 py-3 rounded-xl text-sm border"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
             New Game
           </button>
         </div>
@@ -294,128 +272,109 @@ export function ScoreScreen() {
 
       {/* ── Game Notes ── */}
       <div className="px-3 space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
-          📝 Game Notes
-        </p>
 
-        {/* Bowling alley + lane — persist between games */}
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🎳 Bowling Alley</p>
-            <input
-              value={bowlingAlley} onChange={(e) => setBowlingAlley(e.target.value)}
-              placeholder="e.g. AMF Bowlero"
-              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            />
+        {/* Fixed session info */}
+        <div className="rounded-xl border p-3 space-y-2"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
+            Session Info
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: '🎳 Bowling Alley', val: bowlingAlley, set: setBowlingAlley, ph: 'e.g. AMF Bowlero' },
+              { label: '🔢 Lane Pair',     val: laneNumber,   set: setLaneNumber,   ph: 'e.g. 7-8' },
+            ].map(({ label, val, set, ph }) => (
+              <div key={label}>
+                <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>{label}</p>
+                <input value={val} onChange={(e) => set(e.target.value)} placeholder={ph}
+                  className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              </div>
+            ))}
           </div>
-          <div>
-            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🔢 Lane Pair</p>
-            <input
-              value={laneNumber} onChange={(e) => setLaneNumber(e.target.value)}
-              placeholder="e.g. 7-8"
-              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            />
-          </div>
-        </div>
-
-        {/* Oil + target */}
-        <div className="grid grid-cols-2 gap-2">
           <div>
             <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🛢️ Oil Pattern</p>
-            <input
-              value={oilPattern} onChange={(e) => setOilPattern(e.target.value)}
-              placeholder="e.g. Sport 40ft"
+            <input value={oilPattern} onChange={(e) => setOilPattern(e.target.value)} placeholder="e.g. Sport 40ft"
               className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            />
-          </div>
-          <div>
-            <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🎯 Arrow / Mark</p>
-            <input
-              value={targetArrow} onChange={(e) => setTargetArrow(e.target.value)}
-              placeholder="e.g. 3rd arrow"
-              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            />
+              style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
           </div>
         </div>
 
-        {/* Board tracking */}
-        <div
-          className="rounded-xl border p-3 space-y-3"
-          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
-        >
-          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
-            ↔️ Board Tracking
+        {/* Board & Mark tracking */}
+        <div className="rounded-xl border p-3 space-y-2"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
+            ↔️ Board & Mark Tracking
           </p>
 
-          {/* Starting board */}
-          <div className="flex items-center gap-2">
-            <div
-              className="text-[10px] px-2 py-1 rounded-lg font-semibold flex-shrink-0"
-              style={{ background: 'var(--bg-deep)', color: 'var(--accent)' }}
-            >
-              Start
+          {/* Log of adjustments */}
+          {adjustments.length > 0 && (
+            <div className="space-y-1.5">
+              {adjustments.map((adj, idx) => (
+                <div key={idx} className="flex items-center gap-2 rounded-lg px-2 py-1.5"
+                  style={{ background: 'var(--bg-deep)' }}>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                    style={{ background: 'var(--accent)22', color: 'var(--accent)' }}>
+                    F{adj.frame}
+                  </span>
+                  {adj.board && (
+                    <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+                      Board {adj.board}
+                    </span>
+                  )}
+                  {adj.board && adj.mark && (
+                    <span style={{ color: 'var(--text-faint)' }}>·</span>
+                  )}
+                  {adj.mark && (
+                    <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
+                      {adj.mark}
+                    </span>
+                  )}
+                  <button onClick={() => setAdjustments((p) => p.filter((_, i) => i !== idx))}
+                    className="ml-auto text-xs" style={{ color: 'var(--text-faint)' }}>
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
-            <input
-              value={startingBoard} onChange={(e) => setStartingBoard(e.target.value)}
-              placeholder="Starting board (e.g. 25)"
-              className="flex-1 px-3 py-1.5 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            />
-          </div>
+          )}
 
-          {/* Existing adjustments */}
-          {adjustments.map((adj, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <div
-                className="text-[10px] px-2 py-1 rounded-lg font-semibold flex-shrink-0"
-                style={{ background: 'var(--accent)22', color: 'var(--accent)' }}
-              >
-                Frame {adj.frame}
-              </div>
-              <span className="flex-1 text-sm" style={{ color: 'var(--text-primary)' }}>
-                Board {adj.board}
+          {/* Add new entry — frame auto-filled */}
+          <div className="rounded-lg p-2 space-y-2" style={{ background: 'var(--bg-deep)', border: '1px dashed var(--border)' }}>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold px-2 py-1 rounded flex-shrink-0"
+                style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
+                Frame {currentFrame}
               </span>
-              <button
-                onClick={() => removeAdjustment(idx)}
-                className="text-xs px-2 py-1 rounded-lg"
-                style={{ color: 'var(--red)', background: 'var(--bg-deep)' }}
-              >
-                ✕
-              </button>
+              <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>
+                {isComplete ? 'Game complete' : 'Current frame from scoreboard'}
+              </span>
             </div>
-          ))}
-
-          {/* Add new adjustment */}
-          <div className="flex items-center gap-2">
-            <div
-              className="text-[10px] px-2 py-1 rounded-lg font-semibold flex-shrink-0"
-              style={{ background: 'var(--bg-muted)', color: 'var(--text-faint)', border: '1px dashed var(--border)' }}
-            >
-              Frame {currentFrame}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Board</p>
+                <input value={addingBoard} onChange={(e) => setAddingBoard(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && logAdjustment()}
+                  placeholder="e.g. 22"
+                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
+                <input value={addingMark} onChange={(e) => setAddingMark(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && logAdjustment()}
+                  placeholder="e.g. 3rd arrow"
+                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+              </div>
             </div>
-            <input
-              value={newBoard} onChange={(e) => setNewBoard(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addAdjustment()}
-              placeholder="New board (e.g. 22)"
-              className="flex-1 px-3 py-1.5 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-            />
-            <button
-              onClick={addAdjustment}
-              disabled={!newBoard.trim()}
-              className="px-3 py-1.5 rounded-lg text-sm font-bold disabled:opacity-40"
-              style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-            >
-              + Add
+            <button onClick={logAdjustment}
+              disabled={!addingBoard.trim() && !addingMark.trim()}
+              className="w-full py-2 rounded-lg text-sm font-bold disabled:opacity-40"
+              style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
+              + Add Frame {currentFrame} Adjustment
             </button>
           </div>
-          <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>
-            Frame number updates as you bowl — tap + Add whenever you move.
-          </p>
         </div>
       </div>
     </div>
