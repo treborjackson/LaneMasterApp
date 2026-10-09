@@ -452,7 +452,7 @@ export function ScoreScreen() {
                   style={{ background: 'var(--bg-deep)' }}>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
                     style={{ background: 'var(--accent)22', color: 'var(--accent)' }}>
-                    F{adj.frame}
+                    Frame {adj.frame}
                   </span>
                   <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>
                     {[adj.board ? `Standing ${adj.board}` : '', adj.mark].filter(Boolean).join(' · ')}
