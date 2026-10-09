@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { useGames } from '@/hooks/useGames';
 import { calcRunningScores } from '@/lib/utils';
@@ -19,65 +19,37 @@ const MARK_OPTIONS = [
   ...Array.from({ length: 39 }, (_, i) => `Board ${i + 1}`),
 ];
 
-function ComboInput({
-  value, onChange, options, placeholder, borderColor,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  placeholder?: string;
-  borderColor?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const filtered = value
-    ? options.filter((o) => o.toLowerCase().includes(value.toLowerCase()))
-    : options;
+const selectStyle = {
+  background: 'var(--bg-card)',
+  borderColor: 'var(--border)',
+  color: 'var(--text-primary)',
+};
 
-  useEffect(() => {
-    function handleOutside(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('pointerdown', handleOutside);
-    return () => document.removeEventListener('pointerdown', handleOutside);
-  }, []);
+const selectAccentStyle = {
+  background: 'var(--bg-card)',
+  borderColor: 'var(--accent)',
+  color: 'var(--text-primary)',
+};
 
+function BoardSelect({ value, onChange, accent }: { value: string; onChange: (v: string) => void; accent?: boolean }) {
   return (
-    <div ref={ref} className="relative">
-      <div className="flex rounded-lg border overflow-hidden"
-        style={{ borderColor: borderColor ?? 'var(--border)', background: 'var(--bg-card)' }}>
-        <input
-          value={value}
-          onChange={(e) => { onChange(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-          placeholder={placeholder}
-          className="flex-1 px-2 py-1.5 text-sm outline-none bg-transparent"
-          style={{ color: 'var(--text-primary)' }}
-        />
-        <button
-          type="button"
-          onPointerDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
-          className="px-2 flex items-center"
-          style={{ color: 'var(--text-faint)', borderLeft: '1px solid var(--border)' }}>
-          ▾
-        </button>
-      </div>
-      {open && filtered.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-y-auto"
-          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', maxHeight: '180px' }}>
-          {filtered.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onPointerDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
-              className="w-full text-left px-3 py-2 text-sm"
-              style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+      style={accent ? selectAccentStyle : selectStyle}>
+      <option value="">— Select —</option>
+      {BOARD_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+
+function MarkSelect({ value, onChange, accent }: { value: string; onChange: (v: string) => void; accent?: boolean }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+      style={accent ? selectAccentStyle : selectStyle}>
+      <option value="">— Select —</option>
+      {MARK_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
   );
 }
 
@@ -439,15 +411,11 @@ export function ScoreScreen() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
-                      <ComboInput value={editBoard} onChange={setEditBoard}
-                        options={BOARD_OPTIONS} placeholder="e.g. Board 22"
-                        borderColor="var(--accent)" />
+                      <BoardSelect value={editBoard} onChange={setEditBoard} accent />
                     </div>
                     <div>
                       <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                      <ComboInput value={editMark} onChange={setEditMark}
-                        options={MARK_OPTIONS} placeholder="e.g. 3rd Arrow"
-                        borderColor="var(--accent)" />
+                      <MarkSelect value={editMark} onChange={setEditMark} accent />
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -502,13 +470,11 @@ export function ScoreScreen() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
-                <ComboInput value={addingBoard} onChange={setAddingBoard}
-                  options={BOARD_OPTIONS} placeholder="e.g. Board 22" />
+                <BoardSelect value={addingBoard} onChange={setAddingBoard} />
               </div>
               <div>
                 <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                <ComboInput value={addingMark} onChange={setAddingMark}
-                  options={MARK_OPTIONS} placeholder="e.g. 3rd Arrow" />
+                <MarkSelect value={addingMark} onChange={setAddingMark} />
               </div>
             </div>
             <button onClick={logAdjustment}
