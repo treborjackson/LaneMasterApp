@@ -1,11 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { useGames } from '@/hooks/useGames';
 import { calcRunningScores } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/PageHeader';
 import type { Frame } from '@/lib/types/game';
+
+const BOARD_OPTIONS = Array.from({ length: 39 }, (_, i) => `Board ${i + 1}`);
+const MARK_OPTIONS = [
+  '1st Arrow (board 5)',
+  '2nd Arrow (board 10)',
+  '3rd Arrow (board 15)',
+  '4th Arrow (board 20)',
+  '5th Arrow (board 25)',
+  '6th Arrow (board 30)',
+  '7th Arrow (board 35)',
+  ...Array.from({ length: 39 }, (_, i) => `Board ${i + 1}`),
+];
+
+function ComboInput({
+  value, onChange, options, placeholder, borderColor,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+  borderColor?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const filtered = value
+    ? options.filter((o) => o.toLowerCase().includes(value.toLowerCase()))
+    : options;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex rounded-lg border overflow-hidden"
+        style={{ borderColor: borderColor ?? 'var(--border)', background: 'var(--bg-card)' }}>
+        <input
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder={placeholder}
+          className="flex-1 px-2 py-1.5 text-sm outline-none bg-transparent"
+          style={{ color: 'var(--text-primary)' }}
+        />
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+          className="px-2 flex items-center"
+          style={{ color: 'var(--text-faint)', borderLeft: '1px solid var(--border)' }}>
+          ▾
+        </button>
+      </div>
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-y-auto"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', maxHeight: '180px' }}>
+          {filtered.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
+              className="w-full text-left px-3 py-2 text-sm"
+              style={{ color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function initFrames(): Frame[] {
   return Array.from({ length: 10 }, () => ({ ball1: '', ball2: '', ball3: '', note: '' }));
@@ -335,25 +409,6 @@ export function ScoreScreen() {
             ↔️ Standing On & Mark Tracking
           </p>
 
-          {/* datalists shared across all inputs */}
-          <datalist id="board-list">
-            {Array.from({ length: 39 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={`Board ${n}`} />
-            ))}
-          </datalist>
-          <datalist id="mark-list">
-            <option value="1st Arrow (board 5)" />
-            <option value="2nd Arrow (board 10)" />
-            <option value="3rd Arrow (board 15)" />
-            <option value="4th Arrow (board 20)" />
-            <option value="5th Arrow (board 25)" />
-            <option value="6th Arrow (board 30)" />
-            <option value="7th Arrow (board 35)" />
-            {Array.from({ length: 39 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={`Board ${n}`} />
-            ))}
-          </datalist>
-
           {/* Adjustment log */}
           {adjustments.map((adj, idx) => (
             <div key={idx}>
@@ -367,17 +422,15 @@ export function ScoreScreen() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
-                      <input list="board-list" value={editBoard} onChange={(e) => setEditBoard(e.target.value)}
-                        placeholder="e.g. 22"
-                        className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
+                      <ComboInput value={editBoard} onChange={setEditBoard}
+                        options={BOARD_OPTIONS} placeholder="e.g. Board 22"
+                        borderColor="var(--accent)" />
                     </div>
                     <div>
                       <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                      <input list="mark-list" value={editMark} onChange={(e) => setEditMark(e.target.value)}
-                        placeholder="e.g. 3rd Arrow"
-                        className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
+                      <ComboInput value={editMark} onChange={setEditMark}
+                        options={MARK_OPTIONS} placeholder="e.g. 3rd Arrow"
+                        borderColor="var(--accent)" />
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -432,19 +485,13 @@ export function ScoreScreen() {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
-                <input list="board-list" value={addingBoard} onChange={(e) => setAddingBoard(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && logAdjustment()}
-                  placeholder="e.g. 22"
-                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                <ComboInput value={addingBoard} onChange={setAddingBoard}
+                  options={BOARD_OPTIONS} placeholder="e.g. Board 22" />
               </div>
               <div>
                 <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Mark / Arrow</p>
-                <input list="mark-list" value={addingMark} onChange={(e) => setAddingMark(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && logAdjustment()}
-                  placeholder="e.g. 3rd Arrow"
-                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+                <ComboInput value={addingMark} onChange={setAddingMark}
+                  options={MARK_OPTIONS} placeholder="e.g. 3rd Arrow" />
               </div>
             </div>
             <button onClick={logAdjustment}
