@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/appStore';
 import { useGames } from '@/hooks/useGames';
 import { calcRunningScores } from '@/lib/utils';
@@ -128,7 +128,9 @@ export function ScoreScreen() {
     savedAlleys, addAlley,
     setLastBowlingAlley, setLastLanePair,
   } = useAppStore();
-  const { saveGame } = useGames();
+  const { saveGame, fetchGames } = useGames();
+
+  useEffect(() => { if (token) fetchGames(); }, [token, fetchGames]);
 
   const [frames, setFrames]   = useState<Frame[]>(initFrames());
   const [saved, setSaved]     = useState(false);
