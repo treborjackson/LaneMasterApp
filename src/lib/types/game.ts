@@ -11,6 +11,7 @@ export interface GameSession {
   totalScore:   number;
   ballUsed:     string | null;
   laneNumber:   number | null;
+  lanePair:     string | null;
   oilPattern:   string | null;
   bowlingAlley:     string | null;
   stance:           string | null;

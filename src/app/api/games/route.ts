@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
         totalScore:       body.totalScore       ?? 0,
         ballUsed:         body.ballUsed         ?? null,
         laneNumber:       body.laneNumber       ?? null,
+        lanePair:         body.lanePair         ?? null,
         oilPattern:       body.oilPattern       ?? null,
         bowlingAlley:     body.bowlingAlley     ?? null,
         stance:           body.stance           ?? null,

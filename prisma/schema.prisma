@@ -51,6 +51,7 @@ model GameSession {
   totalScore    Int      @default(0)
   ballUsed      String?
   laneNumber    Int?
+  lanePair      String?  @map("lane_pair")
   oilPattern    String?
   bowlingAlley     String?  @map("bowling_alley")
   stance           String?

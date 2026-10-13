@@ -246,7 +246,8 @@ export function ScoreScreen() {
       await saveGame({
         totalScore:       total as number,
         ballUsed:         null,
-        laneNumber:       laneNumber ? parseInt(laneNumber) : null,
+        laneNumber:       null,
+        lanePair:         laneNumber || null,
         oilPattern:       oilPattern   || null,
         bowlingAlley:     bowlingAlley || null,
         stance:           null,

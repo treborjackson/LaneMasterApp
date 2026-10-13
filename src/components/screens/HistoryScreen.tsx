@@ -107,12 +107,12 @@ export function HistoryScreen() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-bold text-lg leading-none" style={{ color: 'var(--accent)' }}>
+                          <span className="text-xs font-normal mr-1" style={{ color: 'var(--text-faint)' }}>Score:</span>
                           {game.totalScore}
-                          <span className="text-xs font-normal ml-1" style={{ color: 'var(--text-faint)' }}>pts</span>
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                           {formatDate(game.datePlayed)}
-                          {game.laneNumber && ` · Lanes ${game.laneNumber}`}
+                          {game.lanePair && ` · Lanes ${game.lanePair}`}
                           {game.oilPattern && ` · ${game.oilPattern}`}
                         </p>
                       </div>
