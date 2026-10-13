@@ -152,7 +152,7 @@ export function HistoryScreen() {
                           <div key={i} className="rounded-lg p-2 text-center" style={{ background: 'var(--bg-muted)' }}>
                             <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>F{i + 1}</p>
                             <p className="text-xs font-bold" style={{ color: frame.ball1 === 'X' ? 'var(--red)' : 'var(--text-primary)' }}>
-                              {frame.ball1 || '—'}{frame.ball2 ? `·${frame.ball2}` : ''}
+                              {frame.ball1 || '—'}{frame.ball2 ? `·${frame.ball2}` : ''}{frame.ball3 ? `·${frame.ball3}` : ''}
                             </p>
                           </div>
                         ))}
