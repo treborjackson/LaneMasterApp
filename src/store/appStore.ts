@@ -25,9 +25,11 @@ interface AppState {
   lastBowlingAlley: string;
   lastLanePair:     string;
   savedAlleys:      string[];
+  savedOilPatterns: string[];
   setLastBowlingAlley: (v: string) => void;
   setLastLanePair:     (v: string) => void;
   addAlley:            (v: string) => void;
+  addOilPattern:       (v: string) => void;
 
   favBrands:   string[];
   toggleBrand: (brand: string) => void;
@@ -63,10 +65,14 @@ export const useAppStore = create<AppState>()(
       lastBowlingAlley: '',
       lastLanePair:     '',
       savedAlleys:      [],
+      savedOilPatterns: [],
       setLastBowlingAlley: (v) => set({ lastBowlingAlley: v }),
       setLastLanePair:     (v) => set({ lastLanePair: v }),
       addAlley: (v) => set((s) => ({
         savedAlleys: s.savedAlleys.includes(v) ? s.savedAlleys : [...s.savedAlleys, v],
+      })),
+      addOilPattern: (v) => set((s) => ({
+        savedOilPatterns: s.savedOilPatterns.includes(v) ? s.savedOilPatterns : [...s.savedOilPatterns, v],
       })),
 
       favBrands:   [],

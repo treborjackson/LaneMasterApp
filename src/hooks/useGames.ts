@@ -6,7 +6,7 @@ import { apiGetGames, apiSaveGame, apiDeleteGame } from '@/lib/api';
 import type { GameSession } from '@/lib/types/game';
 
 export function useGames() {
-  const { token, addAlley } = useAppStore();
+  const { token, addAlley, addOilPattern } = useAppStore();
   const [games, setGames]     = useState<GameSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
@@ -18,13 +18,16 @@ export function useGames() {
       const data: GameSession[] = await apiGetGames(token);
       setGames(data);
       // Seed saved alleys from game history
-      data.forEach((g) => { if (g.bowlingAlley) addAlley(g.bowlingAlley); });
+      data.forEach((g) => {
+        if (g.bowlingAlley) addAlley(g.bowlingAlley);
+        if (g.oilPattern)   addOilPattern(g.oilPattern);
+      });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load games');
     } finally {
       setLoading(false);
     }
-  }, [token, addAlley]);
+  }, [token, addAlley, addOilPattern]);
 
   const saveGame = useCallback(async (game: Omit<GameSession, 'id' | 'datePlayed'>) => {
     if (!token) throw new Error('Not authenticated');

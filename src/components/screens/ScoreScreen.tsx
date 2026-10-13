@@ -127,6 +127,7 @@ export function ScoreScreen() {
     token, setActiveTab,
     lastBowlingAlley, lastLanePair,
     savedAlleys, addAlley,
+    savedOilPatterns, addOilPattern,
     setLastBowlingAlley, setLastLanePair,
   } = useAppStore();
   const { saveGame, fetchGames } = useGames();
@@ -256,6 +257,7 @@ export function ScoreScreen() {
         frames,
       });
       if (bowlingAlley) addAlley(bowlingAlley);
+      if (oilPattern)   addOilPattern(oilPattern);
       setSaved(true);
       setTimeout(() => newGame(), 1500);
     } catch (err) {
@@ -412,9 +414,23 @@ export function ScoreScreen() {
           </div>
           <div>
             <p className="text-[10px] mb-1 font-semibold" style={{ color: 'var(--text-faint)' }}>🛢️ Oil Pattern</p>
-            <input value={oilPattern} onChange={(e) => setOilPattern(e.target.value)} placeholder="e.g. Sport 40ft"
-              className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
-              style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            {savedOilPatterns.length > 0 ? (
+              <select value={oilPattern} onChange={(e) => setOilPattern(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm border outline-none mb-1"
+                style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                <option value="">— Select or add new below —</option>
+                {savedOilPatterns.map((p) => <option key={p} value={p}>{p}</option>)}
+                <option value="__new__">+ Add new pattern…</option>
+              </select>
+            ) : null}
+            {(savedOilPatterns.length === 0 || oilPattern === '__new__' || (oilPattern && !savedOilPatterns.includes(oilPattern))) && (
+              <input
+                value={oilPattern === '__new__' ? '' : oilPattern}
+                onChange={(e) => setOilPattern(e.target.value)}
+                placeholder="e.g. Sport 40ft"
+                className="w-full px-3 py-2 rounded-lg text-sm border outline-none"
+                style={{ background: 'var(--bg-deep)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            )}
           </div>
         </div>
 
