@@ -119,6 +119,7 @@ interface Adjustment {
   frame: number;
   board: string;
   mark:  string;
+  note:  string;
 }
 
 export function ScoreScreen() {
@@ -150,9 +151,11 @@ export function ScoreScreen() {
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
   const [addingBoard, setAddingBoard]  = useState('');
   const [addingMark,  setAddingMark]   = useState('');
+  const [addingNote,  setAddingNote]   = useState('');
   const [editingIdx,  setEditingIdx]   = useState<number | null>(null);
   const [editBoard,   setEditBoard]    = useState('');
   const [editMark,    setEditMark]     = useState('');
+  const [editNote,    setEditNote]     = useState('');
 
   const current       = nextBall(frames);
   const runningScores = calcRunningScores(frames);
@@ -186,25 +189,27 @@ export function ScoreScreen() {
   }
 
   function logAdjustment() {
-    if (!addingBoard.trim() && !addingMark.trim()) return;
+    if (!addingBoard.trim() && !addingMark.trim() && !addingNote.trim()) return;
     setAdjustments((prev) => [
       ...prev,
-      { frame: currentFrame, board: addingBoard.trim(), mark: addingMark.trim() },
+      { frame: currentFrame, board: addingBoard.trim(), mark: addingMark.trim(), note: addingNote.trim() },
     ]);
     setAddingBoard('');
     setAddingMark('');
+    setAddingNote('');
   }
 
   function startEdit(idx: number) {
     setEditingIdx(idx);
     setEditBoard(adjustments[idx].board);
     setEditMark(adjustments[idx].mark);
+    setEditNote(adjustments[idx].note ?? '');
   }
 
   function saveEdit() {
     if (editingIdx === null) return;
     setAdjustments((prev) =>
-      prev.map((a, i) => i === editingIdx ? { ...a, board: editBoard.trim(), mark: editMark.trim() } : a)
+      prev.map((a, i) => i === editingIdx ? { ...a, board: editBoard.trim(), mark: editMark.trim(), note: editNote.trim() } : a)
     );
     setEditingIdx(null);
   }
@@ -218,6 +223,7 @@ export function ScoreScreen() {
     setAdjustments([]);
     setAddingBoard('');
     setAddingMark('');
+    setAddingNote('');
     setEditingIdx(null);
   }
 
@@ -233,7 +239,7 @@ export function ScoreScreen() {
       : '';
     const boardLog = [
       startLine,
-      ...adjustments.map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · ${a.mark}` : ''}`),
+      ...adjustments.map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · ${a.mark}` : ''}${a.note ? ` · ${a.note}` : ''}`),
     ].filter(Boolean).join(' | ');
 
     try {
@@ -438,6 +444,13 @@ export function ScoreScreen() {
                       <MarkSelect value={editMark} onChange={setEditMark} accent />
                     </div>
                   </div>
+                  <div>
+                    <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Note</p>
+                    <input value={editNote} onChange={(e) => setEditNote(e.target.value)}
+                      placeholder="e.g. moved left 3 boards, ball hooking early"
+                      className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                      style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }} />
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={saveEdit}
                       className="flex-1 py-1.5 rounded-lg text-xs font-bold"
@@ -459,9 +472,14 @@ export function ScoreScreen() {
                     style={{ background: 'var(--accent)22', color: 'var(--accent)' }}>
                     Frame {adj.frame}
                   </span>
-                  <span className="flex-1 text-xs" style={{ color: 'var(--text-primary)' }}>
-                    {[adj.board ? `Standing On: ${adj.board}` : '', adj.mark ? `Mark: ${adj.mark}` : ''].filter(Boolean).join(' · ')}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs" style={{ color: 'var(--text-primary)' }}>
+                      {[adj.board ? `Standing On: ${adj.board}` : '', adj.mark ? `Mark: ${adj.mark}` : ''].filter(Boolean).join(' · ')}
+                    </p>
+                    {adj.note && (
+                      <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-faint)' }}>{adj.note}</p>
+                    )}
+                  </div>
                   <button onClick={() => startEdit(idx)}
                     className="text-[10px] px-2 py-0.5 rounded border"
                     style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
@@ -497,8 +515,15 @@ export function ScoreScreen() {
                 <MarkSelect value={addingMark} onChange={setAddingMark} />
               </div>
             </div>
+            <div>
+              <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Note</p>
+              <input value={addingNote} onChange={(e) => setAddingNote(e.target.value)}
+                placeholder="e.g. moved left 3 boards, ball hooking early"
+                className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+            </div>
             <button onClick={logAdjustment}
-              disabled={!addingBoard.trim() && !addingMark.trim()}
+              disabled={!addingBoard.trim() && !addingMark.trim() && !addingNote.trim()}
               className="w-full py-2 rounded-lg text-sm font-bold disabled:opacity-40"
               style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
               + Add Frame {currentFrame} Adjustment

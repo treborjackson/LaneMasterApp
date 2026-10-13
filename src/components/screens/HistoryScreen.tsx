@@ -129,13 +129,19 @@ export function HistoryScreen() {
 
                     {/* Notes preview (always visible) */}
                     {notes.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {notes.map((note, i) => (
-                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full"
-                            style={{ background: 'var(--bg-deep)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-                            {note}
-                          </span>
-                        ))}
+                      <div className="mt-2 space-y-1">
+                        {notes.map((note, i) => {
+                          const [frameLabel, ...rest] = note.split(' · ');
+                          return (
+                            <div key={i} className="rounded-lg px-2 py-1.5"
+                              style={{ background: 'var(--bg-deep)', border: '1px solid var(--border)' }}>
+                              <p className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>{frameLabel}</p>
+                              {rest.length > 0 && (
+                                <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{rest.join(' · ')}</p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
