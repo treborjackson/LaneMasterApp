@@ -22,6 +22,18 @@ export function useBallNotes() {
     }
   }, [token]);
 
+  const searchVideo = useCallback(async (ballName: string, brand: string): Promise<string | null> => {
+    if (!token) return null;
+    const res = await fetch('/api/youtube-id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ballName, brand }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.youtubeId ?? null;
+  }, [token]);
+
   const saveNote = useCallback(async (note: Omit<BallNote, 'id' | 'dateAdded'>) => {
     if (!token) throw new Error('Not authenticated');
     const res = await fetch('/api/ball-notes', {
@@ -49,5 +61,5 @@ export function useBallNotes() {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }, [token]);
 
-  return { notes, loading, fetchNotes, saveNote, deleteNote };
+  return { notes, loading, fetchNotes, saveNote, deleteNote, searchVideo };
 }

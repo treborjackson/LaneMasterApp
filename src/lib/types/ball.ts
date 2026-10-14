@@ -18,6 +18,7 @@ export interface BallNote {
   brand:     string;
   weight:    string | null;
   surface:   string | null;
+  videoId:   string | null;
   rating:    number;
   notes:     string;
   dateAdded: string;

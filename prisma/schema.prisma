@@ -75,6 +75,7 @@ model BallNote {
   brand     String
   weight    String?
   surface   String?
+  videoId   String?  @map("video_id")
   rating    Int      @default(0)
   notes     String   @default("")
   dateAdded DateTime @default(now())
