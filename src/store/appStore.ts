@@ -35,8 +35,9 @@ interface AppState {
   toggleBrand: (brand: string) => void;
   clearBrands: () => void;
 
-  token: string | null;
-  user:  { id: string; email: string; name?: string } | null;
+  token:   string | null;
+  loginAt: number | null;
+  user:    { id: string; email: string; name?: string } | null;
   setAuth:   (token: string, user: { id: string; email: string; name?: string }) => void;
   clearAuth: () => void;
 }
@@ -84,10 +85,11 @@ export const useAppStore = create<AppState>()(
         })),
       clearBrands: () => set({ favBrands: [] }),
 
-      token: null,
-      user:  null,
-      setAuth:   (token, user) => set({ token, user }),
-      clearAuth: () => set({ token: null, user: null }),
+      token:   null,
+      loginAt: null,
+      user:    null,
+      setAuth:   (token, user) => set({ token, loginAt: Date.now(), user }),
+      clearAuth: () => set({ token: null, loginAt: null, user: null }),
     }),
     { name: 'lane-master-store' }
   )

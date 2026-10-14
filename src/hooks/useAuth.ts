@@ -3,8 +3,13 @@
 import { useAppStore } from '@/store/appStore';
 import { apiLogin, apiRegister } from '@/lib/api';
 
+const SEVENTY_TWO_HOURS = 72 * 60 * 60 * 1000;
+
 export function useAuth() {
-  const { token, user, setAuth, clearAuth } = useAppStore();
+  const { token, loginAt, user, setAuth, clearAuth } = useAppStore();
+
+  const sessionExpired = !!loginAt && Date.now() - loginAt > SEVENTY_TWO_HOURS;
+  const isAuthenticated = !!token && !sessionExpired;
 
   async function login(email: string, password: string) {
     const data = await apiLogin(email, password);
@@ -22,5 +27,5 @@ export function useAuth() {
     clearAuth();
   }
 
-  return { token, user, login, signup, logout, isAuthenticated: !!token };
+  return { token, user, login, signup, logout, isAuthenticated };
 }
