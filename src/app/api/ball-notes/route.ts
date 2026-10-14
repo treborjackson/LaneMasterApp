@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
   const userId = verifyToken(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { ballName, brand, rating, notes } = await req.json();
+  const { ballName, brand, weight, surface, rating, notes } = await req.json();
 
   const note = await prisma.ballNote.upsert({
     where:  { userId_ballName: { userId, ballName } },
-    update: { brand, rating, notes },
-    create: { userId, ballName, brand, rating: rating ?? 0, notes: notes ?? '' },
+    update: { brand, weight: weight ?? null, surface: surface ?? null, rating, notes } as Parameters<typeof prisma.ballNote.upsert>[0]['update'],
+    create: { userId, ballName, brand, weight: weight ?? null, surface: surface ?? null, rating: rating ?? 0, notes: notes ?? '' } as Parameters<typeof prisma.ballNote.upsert>[0]['create'],
   });
 
   return NextResponse.json(note, { status: 201 });

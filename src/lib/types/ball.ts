@@ -16,6 +16,8 @@ export interface BallNote {
   id:        string;
   ballName:  string;
   brand:     string;
+  weight:    string | null;
+  surface:   string | null;
   rating:    number;
   notes:     string;
   dateAdded: string;

@@ -4,10 +4,10 @@ import { useAppStore } from '@/store/appStore';
 
 const TABS = [
   { id: 'picker',  label: 'Balls',   emoji: '🎳'  },
-  { id: 'oil',     label: 'Oil',     emoji: '🛢️'  },
+  { id: 'myballs', label: 'My Bag',  emoji: '🏆'  },
   { id: 'coach',   label: 'Coach',   emoji: '🧑‍🏫' },
-  { id: 'score',   label: 'Game Notes', emoji: '📊'  },
-  { id: 'history', label: 'Game Log', emoji: '📜'  },
+  { id: 'score',   label: 'Notes',   emoji: '📊'  },
+  { id: 'history', label: 'Log',     emoji: '📜'  },
 ];
 
 export function BottomTabBar() {

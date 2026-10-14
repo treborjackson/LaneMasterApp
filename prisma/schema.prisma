@@ -73,6 +73,8 @@ model BallNote {
 
   ballName  String
   brand     String
+  weight    String?
+  surface   String?
   rating    Int      @default(0)
   notes     String   @default("")
   dateAdded DateTime @default(now())
