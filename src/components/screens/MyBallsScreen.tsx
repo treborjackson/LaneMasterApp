@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useBallNotes } from '@/hooks/useBallNotes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { WoodCard } from '@/components/ui/WoodCard';
+import { VideoModal } from '@/components/ui/VideoModal';
 import type { BallNote } from '@/lib/types/ball';
 
 const WEIGHTS = ['16 lbs', '15 lbs', '14 lbs', '13 lbs', '12 lbs', '11 lbs', '10 lbs'];
@@ -20,7 +21,8 @@ export function MyBallsScreen() {
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
   const [expanded, setExpanded]     = useState<string | null>(null);
-  const [searching, setSearching]   = useState<string | null>(null); // ball id being searched
+  const [searching, setSearching]   = useState<string | null>(null);
+  const [video, setVideo]           = useState<{ youtubeId: string; title: string } | null>(null);
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
@@ -219,14 +221,23 @@ export function MyBallsScreen() {
             <WoodCard key={note.id} onClick={() => setExpanded(isOpen ? null : note.id)}>
               <div className="flex items-start gap-3">
                 {/* Thumbnail */}
-                <div className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden"
-                  style={{ background: 'var(--bg-deep)', border: '1px solid var(--border)' }}>
+                <div
+                  className="flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden relative"
+                  style={{ background: 'var(--bg-deep)', border: '1px solid var(--border)' }}
+                  onClick={note.videoId ? (e) => { e.stopPropagation(); setVideo({ youtubeId: note.videoId!, title: note.ballName }); } : undefined}
+                >
                   {note.videoId ? (
-                    <img
-                      src={`https://img.youtube.com/vi/${note.videoId}/hqdefault.jpg`}
-                      alt={note.ballName}
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={`https://img.youtube.com/vi/${note.videoId}/hqdefault.jpg`}
+                        alt={note.ballName}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.35)' }}>
+                        <span className="text-white text-lg">▶</span>
+                      </div>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-2xl">🎳</div>
                   )}
@@ -261,12 +272,12 @@ export function MyBallsScreen() {
 
                   {/* Video search / watch */}
                   {note.videoId ? (
-                    <a href={`https://www.youtube.com/watch?v=${note.videoId}`} target="_blank" rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setVideo({ youtubeId: note.videoId!, title: note.ballName }); }}
                       className="flex items-center gap-1.5 text-xs font-semibold"
                       style={{ color: 'var(--accent)' }}>
                       ▶ Watch Review Video
-                    </a>
+                    </button>
                   ) : (
                     <button
                       onClick={(e) => { e.stopPropagation(); findVideo(note); }}
@@ -295,6 +306,10 @@ export function MyBallsScreen() {
           );
         })}
       </div>
+
+      {video && (
+        <VideoModal youtubeId={video.youtubeId} title={video.title} onClose={() => setVideo(null)} />
+      )}
     </div>
   );
 }
