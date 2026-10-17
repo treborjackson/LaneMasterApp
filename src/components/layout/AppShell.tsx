@@ -12,18 +12,20 @@ import { CoachScreen } from '@/components/screens/CoachScreen';
 import { ScoreScreen } from '@/components/screens/ScoreScreen';
 import { HistoryScreen } from '@/components/screens/HistoryScreen';
 import { MyBallsScreen } from '@/components/screens/MyBallsScreen';
+import { PracticeScreen } from '@/components/screens/PracticeScreen';
 import { AdminScreen } from '@/components/screens/AdminScreen';
 
 const SEVENTY_TWO_HOURS = 72 * 60 * 60 * 1000;
 
 const SCREENS: Record<string, React.ReactNode> = {
-  picker:  <BallPickerScreen />,
-  oil:     <OilPatternScreen />,
-  coach:   <CoachScreen />,
-  myballs: <MyBallsScreen />,
-  score:   <ScoreScreen />,
-  history: <HistoryScreen />,
-  admin:   <AdminScreen />,
+  picker:   <BallPickerScreen />,
+  oil:      <OilPatternScreen />,
+  coach:    <CoachScreen />,
+  myballs:  <MyBallsScreen />,
+  practice: <PracticeScreen />,
+  score:    <ScoreScreen />,
+  history:  <HistoryScreen />,
+  admin:    <AdminScreen />,
 };
 
 export function AppShell() {

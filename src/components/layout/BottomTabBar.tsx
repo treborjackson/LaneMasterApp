@@ -3,11 +3,12 @@
 import { useAppStore } from '@/store/appStore';
 
 const TABS = [
-  { id: 'picker',  label: 'Balls',   emoji: '🎳'  },
-  { id: 'myballs', label: 'My Bag',  emoji: '🏆'  },
-  { id: 'coach',   label: 'Coach',   emoji: '🧑‍🏫' },
-  { id: 'score',   label: 'Notes',   emoji: '📊'  },
-  { id: 'history', label: 'Log',     emoji: '📜'  },
+  { id: 'picker',   label: 'Balls',    emoji: '🎳'  },
+  { id: 'myballs',  label: 'My Bag',   emoji: '🏆'  },
+  { id: 'practice', label: 'Practice', emoji: '🏋️'  },
+  { id: 'coach',    label: 'Coach',    emoji: '🧑‍🏫' },
+  { id: 'score',    label: 'Notes',    emoji: '📊'  },
+  { id: 'history',  label: 'Log',      emoji: '📜'  },
 ];
 
 export function BottomTabBar() {
@@ -16,20 +17,24 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="flex items-center border-t flex-shrink-0"
+      className="border-t flex-shrink-0 overflow-x-auto"
       style={{
         background: 'var(--bg-deep)',
         borderColor: 'var(--border)',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
+      <div className="flex items-center min-w-max px-1">
       {tabs.map((tab) => {
         const active = activeTab === tab.id;
         return (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="flex flex-1 flex-col items-center pt-2 pb-1 gap-0.5 relative transition-all"
+            className="flex flex-col items-center pt-2 pb-1 gap-0.5 relative transition-all"
+            style={{ minWidth: '64px' }}
             style={{ opacity: active ? 1 : 0.45 }}
           >
             {active && (
@@ -50,6 +55,7 @@ export function BottomTabBar() {
           </button>
         );
       })}
+      </div>
     </nav>
   );
 }
