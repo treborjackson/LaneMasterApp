@@ -34,8 +34,7 @@ export function BottomTabBar() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className="flex flex-col items-center pt-2 pb-1 gap-0.5 relative transition-all"
-            style={{ minWidth: '64px' }}
-            style={{ opacity: active ? 1 : 0.45 }}
+            style={{ minWidth: '64px', opacity: active ? 1 : 0.45 }}
           >
             {active && (
               <span
