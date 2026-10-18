@@ -8,10 +8,15 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('[forgot-password] looking up:', normalizedEmail);
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    });
+    console.log('[forgot-password] user found:', !!user);
 
     // Always return success so we don't reveal whether the email exists
-    if (!user) return NextResponse.json({ ok: true });
+    if (!user) return NextResponse.json({ ok: true, debug: 'no user found' });
 
     // Invalidate any existing unused tokens
     await prisma.passwordReset.updateMany({
