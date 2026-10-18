@@ -5,7 +5,8 @@ import { signToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email: rawEmail, password } = await req.json();
+    const email = rawEmail?.toLowerCase().trim();
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
