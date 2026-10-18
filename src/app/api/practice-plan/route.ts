@@ -33,30 +33,43 @@ export async function POST(req: NextRequest) {
     ? Math.round(recentGames.reduce((s, g) => s + g.totalScore, 0) / recentGames.length)
     : null;
 
+  const FOCUS_GUIDES: Record<string, string> = {
+    'Spare Shooting': 'ALL drills must be spare shooting only — 7-pin, 10-pin, 3-6-9 spare system, corner pins, baby splits. No strike drills.',
+    'Accuracy':       'ALL drills must target hitting a specific arrow or board repeatedly. Focus on repeating the same shot, targeting boards 1-39 and the 7 arrows.',
+    'Hook & Entry':   'ALL drills must work on hook shape, entry angle, and hitting the pocket. Use different release techniques, target the 3rd-4th arrow, adjust launch angles.',
+    'Ball Speed':     'ALL drills must focus on controlling and varying ball speed. Include slow-down drills, speed consistency, and matching speed to lane conditions.',
+    'Mental Game':    'ALL drills must focus on pre-shot routine, breathing, focus between shots, and bouncing back from bad shots. Include visualization drills.',
+    'Full Game':      'Include a balanced mix: 1-2 spare drills, 1-2 accuracy/strike drills, 1 consistency drill, and 1 mental drill.',
+  };
+
+  const focusGuide = FOCUS_GUIDES[focus] ?? FOCUS_GUIDES['Full Game'];
+
   const context = [
     `Skill level: ${skillLevel || 'intermediate'}`,
     `Handedness: ${handedness || 'right'}`,
     avgScore ? `Recent average score: ${avgScore}` : null,
     goals?.length ? `Goals: ${goals.join(', ')}` : null,
-    focus ? `Practice focus today: ${focus}` : null,
     ballNotes.length ? `Balls in bag: ${ballNotes.map((b) => `${b.brand} ${b.ballName}`).join(', ')}` : null,
   ].filter(Boolean).join('\n');
 
   const prompt = `You are a bowling coach. Create a fun, personalized practice plan for this bowler.
+
+TODAY'S FOCUS: ${focus}
+FOCUS RULE: ${focusGuide}
 
 Bowler context:
 ${context}
 
 Return ONLY a JSON object with this exact structure (no markdown, no extra text):
 {
-  "title": "short catchy plan title",
-  "theme": "one-line theme/focus description",
+  "title": "short catchy plan title related to the focus",
+  "theme": "one-line description of what today's session will achieve",
   "duration": "estimated total time like '45 min'",
   "drills": [
     {
       "id": "1",
       "emoji": "single emoji",
-      "name": "drill name",
+      "name": "fun exciting drill name",
       "description": "specific instruction with board numbers, arrows, pin targets",
       "goal": 15,
       "goalLabel": "shots",
@@ -67,12 +80,11 @@ Return ONLY a JSON object with this exact structure (no markdown, no extra text)
 }
 
 Rules:
-- Include 4-6 drills
+- Include 4-6 drills, ALL matching the focus rule above — do NOT mix in drills from other categories
 - Make drill names fun and exciting (e.g. "Corner Pin Destroyer", "Arrow Sniper")
-- Be specific with board numbers and arrows (e.g. "stand on board 20, target 2nd arrow")
-- Mix spare shooting, accuracy, and consistency drills
-- Goal numbers should be realistic (10-25 shots per drill)
-- Tips should be practical and actionable
+- Be specific: board numbers, arrow numbers, pin targets, foot positions
+- Goal numbers should be realistic (10-25 per drill)
+- Tips must be specific to the drill
 - Keep it fun and motivating`;
 
   try {
