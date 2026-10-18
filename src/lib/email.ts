@@ -1,19 +1,21 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-function getResend() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return null;
-  return new Resend(key);
+function getTransporter() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
 }
 
-const FROM = 'Lane Master <noreply@lanemaster.app>';
-
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
-  const resend = getResend();
-  if (!resend) return;
+  const transporter = getTransporter();
+  if (!transporter) return;
 
-  await resend.emails.send({
-    from:    FROM,
+  await transporter.sendMail({
+    from:    `"Lane Master" <${process.env.GMAIL_USER}>`,
     to,
     subject: 'Reset your Lane Master password',
     html: `
@@ -41,11 +43,11 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
 }
 
 export async function sendInviteEmail(to: string, inviteUrl: string, loginUrl: string): Promise<void> {
-  const resend = getResend();
-  if (!resend) return;
+  const transporter = getTransporter();
+  if (!transporter) return;
 
-  await resend.emails.send({
-    from:    FROM,
+  await transporter.sendMail({
+    from:    `"Lane Master" <${process.env.GMAIL_USER}>`,
     to,
     subject: 'Welcome to Lane Master!',
     html: `
