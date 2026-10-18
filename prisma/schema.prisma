@@ -105,6 +105,17 @@ model Invite {
   @@map("invites")
 }
 
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("password_resets")
+}
+
 model CoachMemory {
   id        String   @id @default(cuid())
   userId    String   @unique
