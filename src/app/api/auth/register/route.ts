@@ -14,7 +14,9 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, name, inviteToken } = schema.parse(body);
+    const parsed = schema.parse(body);
+    const { password, name, inviteToken } = parsed;
+    const email = parsed.email.toLowerCase().trim();
 
     const invite = await prisma.invite.findUnique({ where: { token: inviteToken } });
     if (

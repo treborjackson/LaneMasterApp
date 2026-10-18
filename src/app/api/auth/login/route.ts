@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const { email: rawEmail, password } = await req.json();
     const email = rawEmail?.toLowerCase().trim();
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
