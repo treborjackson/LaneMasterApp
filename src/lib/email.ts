@@ -10,6 +10,38 @@ function getTransporter() {
   });
 }
 
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+  const transporter = getTransporter();
+  if (!transporter) return;
+
+  await transporter.sendMail({
+    from:    `"Lane Master" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: 'Reset your Lane Master password',
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:40px 24px;background:#1a1208;color:#e8d5b0;border-radius:12px">
+        <h1 style="color:#d4a843;font-size:28px;margin:0 0 4px">🎳 Lane Master</h1>
+        <p style="color:#a08060;margin:0 0 28px;font-size:13px">AI-powered bowling coaching</p>
+
+        <p style="margin:0 0 12px;font-size:16px;font-weight:700;color:#e8d5b0">Password Reset Request</p>
+        <p style="margin:0 0 24px;font-size:14px;color:#c4a878;line-height:1.6">
+          We received a request to reset your password. Click the button below to choose a new one.
+          This link expires in <strong style="color:#e8d5b0">1 hour</strong>.
+        </p>
+
+        <a href="${resetUrl}"
+           style="display:inline-block;background:#d4a843;color:#1a0a00;font-weight:700;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;margin-bottom:32px">
+          Reset My Password →
+        </a>
+
+        <p style="margin:28px 0 0;font-size:11px;color:#6b5b3e">
+          If you didn't request a password reset, you can safely ignore this email. Your password won't change.
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendInviteEmail(to: string, inviteUrl: string, loginUrl: string): Promise<void> {
   const transporter = getTransporter();
   if (!transporter) return;
