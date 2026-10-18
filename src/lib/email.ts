@@ -1,21 +1,19 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-function getTransporter() {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!user || !pass) return null;
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
-  });
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
 }
 
-export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
-  const transporter = getTransporter();
-  if (!transporter) return;
+const FROM = 'Lane Master <noreply@lanemaster.app>';
 
-  await transporter.sendMail({
-    from:    `"Lane Master" <${process.env.GMAIL_USER}>`,
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+  const resend = getResend();
+  if (!resend) return;
+
+  await resend.emails.send({
+    from:    FROM,
     to,
     subject: 'Reset your Lane Master password',
     html: `
@@ -43,11 +41,11 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
 }
 
 export async function sendInviteEmail(to: string, inviteUrl: string, loginUrl: string): Promise<void> {
-  const transporter = getTransporter();
-  if (!transporter) return;
+  const resend = getResend();
+  if (!resend) return;
 
-  await transporter.sendMail({
-    from:    `"Lane Master" <${process.env.GMAIL_USER}>`,
+  await resend.emails.send({
+    from:    FROM,
     to,
     subject: 'Welcome to Lane Master!',
     html: `
