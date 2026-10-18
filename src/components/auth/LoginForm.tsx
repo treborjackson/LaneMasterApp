@@ -40,11 +40,20 @@ export function LoginForm({ onSuccess, onSignup }: LoginFormProps) {
     setResetLoading(true);
     setError('');
     try {
-      await fetch('/api/auth/forgot-password', {
+      const res  = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
+      const data = await res.json();
+      if (data.debug === 'no user found') {
+        setError('No account found for that email');
+        return;
+      }
+      if (data.emailError) {
+        setError('Email error: ' + data.emailError);
+        return;
+      }
       setResetSent(true);
     } finally {
       setResetLoading(false);
