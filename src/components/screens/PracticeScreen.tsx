@@ -45,13 +45,15 @@ export function PracticeScreen() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
   const [focus, setFocus]       = useState('general');
-  const [done, setDone]         = useState<Record<string, boolean>>({});
+  const [counts, setCounts]       = useState<Record<string, number>>({});
+  const [done, setDone]           = useState<Record<string, boolean>>({});
   const [expandTip, setExpandTip] = useState<string | null>(null);
 
   async function generatePlan() {
     if (!token) return;
     setLoading(true);
     setError('');
+    setCounts({});
     setDone({});
     setPlan(null);
     try {
@@ -74,7 +76,23 @@ export function PracticeScreen() {
     }
   }
 
-  function toggle(id: string) {
+  function addShot(id: string, goal: number) {
+    setCounts((prev) => {
+      const next = (prev[id] ?? 0) + 1;
+      if (next >= goal) setDone((d) => ({ ...d, [id]: true }));
+      return { ...prev, [id]: next };
+    });
+  }
+
+  function removeShot(id: string) {
+    setCounts((prev) => {
+      const next = Math.max((prev[id] ?? 0) - 1, 0);
+      setDone((d) => ({ ...d, [id]: false }));
+      return { ...prev, [id]: next };
+    });
+  }
+
+  function toggleDone(id: string) {
     setDone((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
@@ -162,9 +180,11 @@ export function PracticeScreen() {
 
           {/* Drills */}
           {plan.drills.map((drill) => {
-            const isDone = done[drill.id];
+            const count   = counts[drill.id] ?? 0;
+            const isDone  = done[drill.id] ?? false;
+            const progress = Math.min(count / drill.goal, 1);
             const typeColor = TYPE_COLORS[drill.type] ?? 'var(--accent)';
-            const tipOpen = expandTip === drill.id;
+            const tipOpen   = expandTip === drill.id;
 
             return (
               <div key={drill.id}
@@ -173,44 +193,71 @@ export function PracticeScreen() {
                   background: isDone ? '#10b98112' : 'var(--bg-card)',
                   borderColor: isDone ? '#10b981' : 'var(--border)',
                 }}>
-                {/* Colored top stripe */}
-                <div className="h-1 w-full"
-                  style={{ background: isDone ? '#10b981' : typeColor }} />
+                {/* Progress bar */}
+                <div className="h-1.5 w-full" style={{ background: 'var(--bg-deep)' }}>
+                  <div className="h-full transition-all duration-300"
+                    style={{ width: `${progress * 100}%`, background: isDone ? '#10b981' : typeColor }} />
+                </div>
 
                 <div className="p-4">
-                  {/* Main row: checkbox + content */}
-                  <div className="flex items-start gap-3">
-                    {/* Checkbox */}
-                    <button
-                      onClick={() => toggle(drill.id)}
-                      className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all"
-                      style={{
-                        borderColor: isDone ? '#10b981' : typeColor,
-                        background: isDone ? '#10b981' : 'transparent',
-                      }}>
-                      {isDone && <span className="text-white text-sm font-black">✓</span>}
-                    </button>
-
+                  {/* Title row */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <span className="text-2xl flex-shrink-0">{drill.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-black text-sm" style={{ color: isDone ? '#10b981' : 'var(--text-primary)' }}>
-                          {drill.name}
-                        </p>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: `${typeColor}20`, color: typeColor }}>
-                          {drill.type}
-                        </span>
-                      </div>
-                      <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                      <p className="font-black text-sm" style={{ color: isDone ? '#10b981' : 'var(--text-primary)' }}>
+                        {drill.name}
+                      </p>
+                      <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                         {drill.description}
                       </p>
-                      <p className="text-xs mt-1 font-semibold" style={{ color: 'var(--text-faint)' }}>
-                        🎯 Goal: {drill.goal} {drill.goalLabel}
+                    </div>
+                  </div>
+
+                  {/* Counter + checkbox row */}
+                  <div className="flex items-center gap-3">
+                    {/* Shot counter */}
+                    <button
+                      onClick={() => removeShot(drill.id)}
+                      disabled={count === 0}
+                      className="w-9 h-9 rounded-full text-lg font-bold flex items-center justify-center disabled:opacity-30 border"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+                      −
+                    </button>
+
+                    <div className="flex-1 text-center">
+                      <p className="text-3xl font-black leading-none"
+                        style={{ color: isDone ? '#10b981' : typeColor }}>
+                        {count}
+                      </p>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-faint)' }}>
+                        of {drill.goal} {drill.goalLabel}
                       </p>
                     </div>
 
-                    {/* Emoji */}
-                    <span className="text-2xl flex-shrink-0">{drill.emoji}</span>
+                    <button
+                      onClick={() => addShot(drill.id, drill.goal)}
+                      disabled={isDone}
+                      className="w-9 h-9 rounded-full text-lg font-bold flex items-center justify-center disabled:opacity-30"
+                      style={{ background: typeColor, color: '#fff' }}>
+                      +
+                    </button>
+
+                    {/* Divider */}
+                    <div className="w-px h-8 mx-1" style={{ background: 'var(--border)' }} />
+
+                    {/* Checkmark */}
+                    <button
+                      onClick={() => toggleDone(drill.id)}
+                      className="w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0"
+                      style={{
+                        borderColor: isDone ? '#10b981' : 'var(--border)',
+                        background:  isDone ? '#10b981' : 'transparent',
+                      }}>
+                      {isDone
+                        ? <span className="text-white font-black text-base">✓</span>
+                        : <span className="text-base" style={{ color: 'var(--text-faint)' }}>✓</span>
+                      }
+                    </button>
                   </div>
 
                   {/* Tip */}
