@@ -76,18 +76,13 @@ export function PracticeScreen() {
     }
   }
 
-  function addShot(id: string, goal: number) {
+  function tapShot(id: string, shotIndex: number, goal: number) {
     setCounts((prev) => {
-      const next = (prev[id] ?? 0) + 1;
+      const current = prev[id] ?? 0;
+      // Tapping an already-filled bubble unfills from that point
+      const next = shotIndex < current ? shotIndex : shotIndex + 1;
       if (next >= goal) setDone((d) => ({ ...d, [id]: true }));
-      return { ...prev, [id]: next };
-    });
-  }
-
-  function removeShot(id: string) {
-    setCounts((prev) => {
-      const next = Math.max((prev[id] ?? 0) - 1, 0);
-      setDone((d) => ({ ...d, [id]: false }));
+      else setDone((d) => ({ ...d, [id]: false }));
       return { ...prev, [id]: next };
     });
   }
@@ -213,51 +208,46 @@ export function PracticeScreen() {
                     </div>
                   </div>
 
-                  {/* Counter + checkbox row */}
-                  <div className="flex items-center gap-3">
-                    {/* Shot counter */}
-                    <button
-                      onClick={() => removeShot(drill.id)}
-                      disabled={count === 0}
-                      className="w-9 h-9 rounded-full text-lg font-bold flex items-center justify-center disabled:opacity-30 border"
-                      style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
-                      −
-                    </button>
-
-                    <div className="flex-1 text-center">
-                      <p className="text-3xl font-black leading-none"
-                        style={{ color: isDone ? '#10b981' : typeColor }}>
-                        {count}
-                      </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-faint)' }}>
-                        of {drill.goal} {drill.goalLabel}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => addShot(drill.id, drill.goal)}
-                      disabled={isDone}
-                      className="w-9 h-9 rounded-full text-lg font-bold flex items-center justify-center disabled:opacity-30"
-                      style={{ background: typeColor, color: '#fff' }}>
-                      +
-                    </button>
-
-                    {/* Divider */}
-                    <div className="w-px h-8 mx-1" style={{ background: 'var(--border)' }} />
-
+                  {/* Shot count label */}
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold" style={{ color: 'var(--text-faint)' }}>
+                      SHOTS: <span style={{ color: isDone ? '#10b981' : typeColor }}>{count}</span> / {drill.goal}
+                    </p>
                     {/* Checkmark */}
                     <button
                       onClick={() => toggleDone(drill.id)}
-                      className="w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0"
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all text-xs font-bold"
                       style={{
                         borderColor: isDone ? '#10b981' : 'var(--border)',
                         background:  isDone ? '#10b981' : 'transparent',
+                        color:       isDone ? '#fff' : 'var(--text-faint)',
                       }}>
-                      {isDone
-                        ? <span className="text-white font-black text-base">✓</span>
-                        : <span className="text-base" style={{ color: 'var(--text-faint)' }}>✓</span>
-                      }
+                      ✓ {isDone ? 'Done' : 'Mark Done'}
                     </button>
+                  </div>
+
+                  {/* Shot bubbles */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {Array.from({ length: drill.goal }, (_, i) => {
+                      const filled = i < count;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => tapShot(drill.id, i, drill.goal)}
+                          className="rounded-full flex items-center justify-center font-bold transition-all"
+                          style={{
+                            width: drill.goal > 20 ? '28px' : '32px',
+                            height: drill.goal > 20 ? '28px' : '32px',
+                            fontSize: drill.goal > 20 ? '9px' : '10px',
+                            background: filled ? typeColor : 'var(--bg-deep)',
+                            color: filled ? '#fff' : 'var(--text-faint)',
+                            border: `1.5px solid ${filled ? typeColor : 'var(--border)'}`,
+                            opacity: isDone && !filled ? 0.4 : 1,
+                          }}>
+                          {i + 1}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Tip */}
