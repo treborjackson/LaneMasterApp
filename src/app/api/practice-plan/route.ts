@@ -33,64 +33,74 @@ export async function POST(req: NextRequest) {
     ? Math.round(recentGames.reduce((s, g) => s + g.totalScore, 0) / recentGames.length)
     : null;
 
-  const FOCUS_GUIDES: Record<string, string> = {
-    'Spare Shooting': 'ALL drills must be spare shooting only — 7-pin, 10-pin, 3-6-9 spare system, corner pins, baby splits. No strike drills.',
-    'Accuracy':       'ALL drills must target hitting a specific arrow or board repeatedly. Focus on repeating the same shot, targeting boards 1-39 and the 7 arrows.',
-    'Hook & Entry':   'ALL drills must work on hook shape, entry angle, and hitting the pocket. Use different release techniques, target the 3rd-4th arrow, adjust launch angles.',
-    'Ball Speed':     'ALL drills must focus on controlling and varying ball speed. Include slow-down drills, speed consistency, and matching speed to lane conditions.',
-    'Mental Game':    'ALL drills must focus on pre-shot routine, breathing, focus between shots, and bouncing back from bad shots. Include visualization drills.',
-    'Full Game':      'Include a balanced mix: 1-2 spare drills, 1-2 accuracy/strike drills, 1 consistency drill, and 1 mental drill.',
+  const FOCUS_DRILLS: Record<string, { type: string; examples: string }> = {
+    'Spare Shooting': {
+      type: 'spare',
+      examples: '10-pin pickup, 7-pin pickup, 3-6-9 spare system, baby split conversion, corner pin drill',
+    },
+    'Accuracy': {
+      type: 'accuracy',
+      examples: 'hit a specific arrow 15 times in a row, board targeting drill, walk the line drill, repeat release drill',
+    },
+    'Hook & Entry': {
+      type: 'consistency',
+      examples: 'pocket entry angle drill, rev rate control, axis tilt adjustment, breakpoint targeting, 2nd arrow entry drill',
+    },
+    'Ball Speed': {
+      type: 'speed',
+      examples: 'slow ball drill, speed control drill, match speed to oil, heavy oil speed adjustment, timed delivery drill',
+    },
+    'Mental Game': {
+      type: 'mental',
+      examples: 'pre-shot routine drill, 10-breath reset drill, visualization between shots, pressure shot drill, bounce-back drill after a bad frame',
+    },
+    'Full Game': {
+      type: 'consistency',
+      examples: 'mix of spare, strike line, speed, and mental drills across a full game',
+    },
   };
 
-  const focusGuide = FOCUS_GUIDES[focus] ?? FOCUS_GUIDES['Full Game'];
+  const focusInfo = FOCUS_DRILLS[focus] ?? FOCUS_DRILLS['Full Game'];
 
   const context = [
-    `Skill level: ${skillLevel || 'intermediate'}`,
-    `Handedness: ${handedness || 'right'}`,
-    avgScore ? `Recent average score: ${avgScore}` : null,
-    goals?.length ? `Goals: ${goals.join(', ')}` : null,
-    ballNotes.length ? `Balls in bag: ${ballNotes.map((b) => `${b.brand} ${b.ballName}`).join(', ')}` : null,
-  ].filter(Boolean).join('\n');
+    `Skill: ${skillLevel || 'intermediate'}, ${handedness || 'right'}-handed`,
+    avgScore ? `Avg score: ${avgScore}` : null,
+    ballNotes.length ? `Balls: ${ballNotes.map((b) => `${b.brand} ${b.ballName}`).join(', ')}` : null,
+  ].filter(Boolean).join(' | ');
 
-  const prompt = `You are a bowling coach. Create a fun, personalized practice plan for this bowler.
+  const prompt = `Create a bowling practice plan. The ONLY focus is: ${focus.toUpperCase()}.
 
-TODAY'S FOCUS: ${focus}
-FOCUS RULE: ${focusGuide}
+Every single drill must be a "${focus}" drill. Do not include any other type of drill.
+Example drill types for this focus: ${focusInfo.examples}
 
-Bowler context:
-${context}
+Bowler: ${context}
 
-Return ONLY a JSON object with this exact structure (no markdown, no extra text):
+Return raw JSON only, no markdown:
 {
-  "title": "short catchy plan title related to the focus",
-  "theme": "one-line description of what today's session will achieve",
-  "duration": "estimated total time like '45 min'",
+  "title": "catchy title about ${focus}",
+  "theme": "what this ${focus} session will improve",
+  "duration": "30-45 min",
   "drills": [
     {
       "id": "1",
-      "emoji": "single emoji",
-      "name": "fun exciting drill name",
-      "description": "specific instruction with board numbers, arrows, pin targets",
+      "emoji": "emoji",
+      "name": "fun drill name",
+      "description": "exact instructions: boards, arrows, pins, reps",
       "goal": 15,
       "goalLabel": "shots",
-      "type": "spare|accuracy|consistency|speed|mental",
-      "tip": "one quick pro tip"
+      "type": "${focusInfo.type}",
+      "tip": "specific coaching tip"
     }
   ]
 }
 
-Rules:
-- Include 4-6 drills, ALL matching the focus rule above — do NOT mix in drills from other categories
-- Make drill names fun and exciting (e.g. "Corner Pin Destroyer", "Arrow Sniper")
-- Be specific: board numbers, arrow numbers, pin targets, foot positions
-- Goal numbers should be realistic (10-25 per drill)
-- Tips must be specific to the drill
-- Keep it fun and motivating`;
+Generate 5 drills. All 5 must be ${focus} drills only. Be specific with board numbers and arrow numbers.`;
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
+      system: `You are a bowling coach who creates practice plans. When given a focus area, you ONLY create drills for that specific focus. You never mix in other drill types. You respond with raw JSON only — no markdown, no explanation, no extra text.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
