@@ -25,9 +25,13 @@ export async function POST(req: NextRequest) {
 
     const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? '';
     const resetUrl = `${appUrl}/auth/reset-password?token=${token}`;
-    await sendPasswordResetEmail(email, resetUrl).catch(() => {});
+    let emailError: string | null = null;
+    await sendPasswordResetEmail(email, resetUrl).catch((err) => {
+      emailError = err?.message ?? String(err);
+      console.error('[forgot-password] email error:', emailError);
+    });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, emailError });
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
