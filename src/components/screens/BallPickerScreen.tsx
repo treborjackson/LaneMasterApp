@@ -220,7 +220,7 @@ export function BallPickerScreen() {
       {brands.length > 0 && (
         <>
           {/* Brand tabs */}
-          <div className="overflow-x-auto px-4 mb-4">
+          <div className="overflow-x-auto px-4 mb-4 scrollbar-hide" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
             <div className="flex gap-2 min-w-max">
               {brands.map((group) => {
                 const color    = BRAND_COLORS[group.brand] ?? 'var(--accent)';
