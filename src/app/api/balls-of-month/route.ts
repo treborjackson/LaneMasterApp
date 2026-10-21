@@ -20,6 +20,7 @@ export interface BrandPick {
   price:     string;
   reasoning: string;
   youtubeId: string;
+  imageUrl:  string;
 }
 
 export interface BrandGroup {
@@ -52,6 +53,25 @@ async function findYouTubeId(ballName: string, brand: string): Promise<string> {
       const check = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
       if (check.ok) return id;
     }
+  } catch { /* ignore */ }
+  return '';
+}
+
+async function findBallImage(ballName: string, brand: string): Promise<string> {
+  try {
+    const query = `${brand} ${ballName} bowling ball`;
+    const url   = `https://www.bowlingball.com/search?q=${encodeURIComponent(query)}`;
+    const res   = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'Accept':     'text/html',
+      },
+    });
+    if (!res.ok) return '';
+    const html = await res.text();
+    // Extract first product image from search results
+    const imgMatch = html.match(/https:\/\/images\.bowlingball\.com\/images\/products\/[^"'\s]+\.(?:jpg|png|webp)/i);
+    if (imgMatch) return imgMatch[0];
   } catch { /* ignore */ }
   return '';
 }
@@ -94,8 +114,11 @@ async function fetchBallsByBrand(): Promise<BrandGroup[]> {
     parsed.map(async (group) => {
       const picks = await Promise.all(
         group.picks.map(async (pick) => {
-          const youtubeId = await findYouTubeId(pick.ballName, pick.brand).catch(() => '');
-          return { ...pick, youtubeId };
+          const [youtubeId, imageUrl] = await Promise.all([
+            findYouTubeId(pick.ballName, pick.brand).catch(() => ''),
+            findBallImage(pick.ballName, pick.brand).catch(() => ''),
+          ]);
+          return { ...pick, youtubeId, imageUrl };
         })
       );
       return { brand: group.brand, picks };

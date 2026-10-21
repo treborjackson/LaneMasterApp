@@ -52,14 +52,36 @@ function BallCard({
       style={{ '--tw-ring-color': brandColor } as React.CSSProperties}
     >
       <div className="flex items-center gap-3">
+        <div className="relative flex-shrink-0">
         <div
-          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 text-xl"
+          className="w-14 h-14 rounded-xl border-2 overflow-hidden flex items-center justify-center"
           style={{
             background:  index === 0 ? `${brandColor}22` : 'var(--bg-muted)',
             borderColor: index === 0 ? brandColor : 'var(--border)',
           }}
         >
-          {MEDALS[index]}
+          {pick.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={pick.imageUrl}
+              alt={pick.ballName}
+              className="w-full h-full object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; (e.currentTarget.parentElement as HTMLElement).dataset.fallback = '1'; }}
+            />
+          ) : pick.youtubeId ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`https://img.youtube.com/vi/${pick.youtubeId}/default.jpg`}
+              alt={pick.ballName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-xl">{MEDALS[index]}</span>
+          )}
+        </div>
+        {(pick.imageUrl || pick.youtubeId) && (
+          <span className="absolute -bottom-1 -right-1 text-sm leading-none">{MEDALS[index]}</span>
+        )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
