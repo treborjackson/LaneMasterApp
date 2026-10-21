@@ -2,16 +2,15 @@ import { NextResponse } from 'next/server';
 import { anthropic } from '@/lib/anthropic';
 import { prisma } from '@/lib/db';
 
-const SOURCE_URL = 'https://www.bowling.com/best-gear/best-bowling-balls';
+const BRANDS = ['Storm', 'Brunswick', 'Hammer', 'Roto Grip', 'Motiv'];
 
-// Refresh on the 1st of every month
 function isNewMonth(date: Date): boolean {
   const now = new Date();
   return now.getFullYear() !== date.getFullYear() ||
          now.getMonth()    !== date.getMonth();
 }
 
-interface Pick {
+export interface BrandPick {
   ballName:  string;
   brand:     string;
   cover:     string;
@@ -23,32 +22,15 @@ interface Pick {
   youtubeId: string;
 }
 
-interface PicksResult {
-  picks:   Pick[];
-  sources: string[];
+export interface BrandGroup {
+  brand: string;
+  picks: BrandPick[];
 }
 
-function extractJson(text: string): Omit<PicksResult, 'picks'> & { picks: Omit<Pick, 'youtubeId'>[] } | null {
-  const match = text.match(/\{[\s\S]*\}/);
+function extractJson(text: string): BrandGroup[] | null {
+  const match = text.match(/\[[\s\S]*\]/);
   if (!match) return null;
   try { return JSON.parse(match[0]); } catch { return null; }
-}
-
-async function fetchPageText(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-      'Accept': 'text/html',
-    },
-  });
-  if (!res.ok) throw new Error(`bowling.com fetch failed: ${res.status}`);
-  const html = await res.text();
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .slice(0, 8000);
 }
 
 async function findYouTubeId(ballName: string, brand: string): Promise<string> {
@@ -63,7 +45,7 @@ async function findYouTubeId(ballName: string, brand: string): Promise<string> {
       },
     });
     if (!res.ok) return '';
-    const html = await res.text();
+    const html    = await res.text();
     const matches = html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g);
     for (const match of matches) {
       const id    = match[1];
@@ -74,40 +56,53 @@ async function findYouTubeId(ballName: string, brand: string): Promise<string> {
   return '';
 }
 
-async function fetchBallsOfMonth(): Promise<PicksResult> {
-  // Step 1: scrape bowling.com for top 5 balls
-  const pageText = await fetchPageText(SOURCE_URL);
+async function fetchBallsByBrand(): Promise<BrandGroup[]> {
+  const now       = new Date();
+  const monthName = now.toLocaleString('en-US', { month: 'long' });
+  const year      = now.getFullYear();
 
   const response = await anthropic.messages.create({
     model:      'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
+    max_tokens: 2048,
     messages: [{
       role:    'user',
       content:
-        'Below is text scraped from bowling.com\'s best bowling balls page. ' +
-        'Extract the top 5 bowling balls mentioned with as much detail as you can find. ' +
-        'For hook and speed, estimate on a 1-10 scale (solid reactive = higher hook, pearl = higher speed). ' +
-        'Respond with ONLY a JSON object (no markdown, no extra text) in this exact shape: ' +
-        '{"picks": [{"ballName": "...", "brand": "...", "cover": "Solid/Pearl/Hybrid Reactive", "lane": "Light/Medium/Heavy oil", "hook": 7, "speed": 7, "price": "$xxx", "reasoning": "1-2 sentence summary"}, ' +
-        '... exactly 5 entries], "sources": ["' + SOURCE_URL + '"]}\n\n' +
-        'PAGE TEXT:\n' + pageText,
+        `For ${monthName} ${year}, list the top 3 most popular and recommended bowling balls ` +
+        `for each of these brands: ${BRANDS.join(', ')}. ` +
+        `Focus on balls that are currently popular among league bowlers and on the pro tour. ` +
+        `For hook and speed use a 1-10 scale. ` +
+        `Respond with ONLY a JSON array (no markdown, no extra text) in this exact shape:\n` +
+        `[{"brand":"Storm","picks":[` +
+        `{"ballName":"...","brand":"Storm","cover":"Solid/Pearl/Hybrid Reactive","lane":"Light/Medium/Heavy oil","hook":7,"speed":6,"price":"$xxx","reasoning":"1-2 sentence summary"},` +
+        `{"ballName":"...","brand":"Storm","cover":"...","lane":"...","hook":8,"speed":5,"price":"$xxx","reasoning":"..."},` +
+        `{"ballName":"...","brand":"Storm","cover":"...","lane":"...","hook":6,"speed":7,"price":"$xxx","reasoning":"..."}` +
+        `]},` +
+        `{"brand":"Brunswick","picks":[...]},` +
+        `{"brand":"Hammer","picks":[...]},` +
+        `{"brand":"Roto Grip","picks":[...]},` +
+        `{"brand":"Motiv","picks":[...]}]`,
     }],
   });
 
   const textBlock = response.content.find((b) => b.type === 'text');
-  const text   = textBlock?.type === 'text' ? textBlock.text : '';
-  const parsed = extractJson(text);
-  if (!parsed) throw new Error(`Could not parse ball list: ${text.slice(0, 300)}`);
+  const text      = textBlock?.type === 'text' ? textBlock.text : '';
+  const parsed    = extractJson(text);
+  if (!parsed) throw new Error(`Could not parse brand list: ${text.slice(0, 300)}`);
 
-  // Step 2: find a YouTube video ID for each ball
-  const picksWithVideo: Pick[] = await Promise.all(
-    parsed.picks.map(async (pick) => {
-      const youtubeId = await findYouTubeId(pick.ballName, pick.brand).catch(() => '');
-      return { ...pick, youtubeId };
+  // Find YouTube videos for all picks in parallel
+  const brandsWithVideo: BrandGroup[] = await Promise.all(
+    parsed.map(async (group) => {
+      const picks = await Promise.all(
+        group.picks.map(async (pick) => {
+          const youtubeId = await findYouTubeId(pick.ballName, pick.brand).catch(() => '');
+          return { ...pick, youtubeId };
+        })
+      );
+      return { brand: group.brand, picks };
     })
   );
 
-  return { picks: picksWithVideo, sources: parsed.sources };
+  return brandsWithVideo;
 }
 
 export async function GET() {
@@ -119,22 +114,23 @@ export async function GET() {
   try {
     const latest = await prisma.ballsOfMonth.findFirst({ orderBy: { createdAt: 'desc' } }).catch(() => null);
     if (latest && !isNewMonth(latest.createdAt)) {
-      return NextResponse.json({
-        picks:   JSON.parse(latest.picks),
-        sources: JSON.parse(latest.sources),
-      });
+      const picks = JSON.parse(latest.picks);
+      // Support both old flat format and new brand-grouped format
+      if (Array.isArray(picks) && picks[0]?.picks) {
+        return NextResponse.json({ brands: picks });
+      }
     }
 
-    const result = await fetchBallsOfMonth();
+    const brands = await fetchBallsByBrand();
 
     await prisma.ballsOfMonth.create({
       data: {
-        picks:   JSON.stringify(result.picks),
-        sources: JSON.stringify(result.sources),
+        picks:   JSON.stringify(brands),
+        sources: JSON.stringify([]),
       },
     }).catch(() => {});
 
-    return NextResponse.json(result);
+    return NextResponse.json({ brands });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[balls-of-month] error:', msg);

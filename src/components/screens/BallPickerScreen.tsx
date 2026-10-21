@@ -4,28 +4,17 @@ import { useState, useEffect } from 'react';
 import { WoodCard } from '@/components/ui/WoodCard';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { VideoModal } from '@/components/ui/VideoModal';
-import { BALL_REVIEWS } from '@/lib/constants/ballReviews';
+import type { BrandGroup, BrandPick } from '@/app/api/balls-of-month/route';
 
+const MEDALS = ['🥇', '🥈', '🥉'];
 
-const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-const MEDAL_LABELS = ['1st Place', '2nd Place', '3rd Place', '4th Place', '5th Place'];
-
-interface MonthPick {
-  ballName:  string;
-  brand:     string;
-  cover:     string;
-  lane:      string;
-  hook:      number;
-  speed:     number;
-  price:     string;
-  reasoning: string;
-  youtubeId: string;
-}
-
-interface BomData {
-  picks:   MonthPick[];
-  sources: string[];
-}
+const BRAND_COLORS: Record<string, string> = {
+  'Storm':      '#e63946',
+  'Brunswick':  '#457b9d',
+  'Hammer':     '#e76f51',
+  'Roto Grip':  '#2a9d8f',
+  'Motiv':      '#8338ec',
+};
 
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -44,36 +33,121 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
   );
 }
 
+function BallCard({
+  pick, index, brandColor, videoLoading, onOpen, onClose, isOpen, onVideo,
+}: {
+  pick: BrandPick;
+  index: number;
+  brandColor: string;
+  videoLoading: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  isOpen: boolean;
+  onVideo: () => void;
+}) {
+  return (
+    <WoodCard
+      onClick={() => isOpen ? onClose() : onOpen()}
+      className={index === 0 ? 'ring-1' : ''}
+      style={{ '--tw-ring-color': brandColor } as React.CSSProperties}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 border-2 text-xl"
+          style={{
+            background:  index === 0 ? `${brandColor}22` : 'var(--bg-muted)',
+            borderColor: index === 0 ? brandColor : 'var(--border)',
+          }}
+        >
+          {MEDALS[index]}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <h4
+              className="font-bold text-sm truncate"
+              style={{ color: index === 0 ? brandColor : 'var(--text-primary)' }}
+            >
+              {pick.ballName}
+            </h4>
+            <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+              {pick.price && (
+                <span className="text-xs font-bold" style={{ color: brandColor }}>{pick.price}</span>
+              )}
+              <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{isOpen ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {pick.cover}{pick.lane ? ` · ${pick.lane}` : ''}
+          </p>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div
+          className="mt-4 pt-4 border-t space-y-3"
+          style={{ borderColor: 'var(--border)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {(pick.hook > 0 || pick.speed > 0) && (
+            <div className="space-y-2">
+              {pick.hook  > 0 && <StatBar label="Hook Potential" value={pick.hook}  color={brandColor} />}
+              {pick.speed > 0 && <StatBar label="Ball Speed"     value={pick.speed} color="var(--blue)" />}
+            </div>
+          )}
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            {pick.reasoning}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={onVideo}
+              disabled={videoLoading}
+              className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+              style={{ background: brandColor, color: '#fff' }}
+            >
+              {videoLoading ? 'Finding video…' : '▶ Watch Video'}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-lg text-sm border"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', background: 'var(--bg-muted)' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </WoodCard>
+  );
+}
+
 export function BallPickerScreen() {
-  const [bom, setBom]             = useState<BomData | null>(null);
+  const [brands, setBrands]       = useState<BrandGroup[]>([]);
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [open, setOpen]           = useState<number | null>(null);
-  const [video, setVideo]               = useState<{ youtubeId: string; title: string } | null>(null);
-  const [videoLoading, setVideoLoading] = useState<number | null>(null);
+  const [openKey, setOpenKey]     = useState<string | null>(null);
+  const [video, setVideo]         = useState<{ youtubeId: string; title: string } | null>(null);
+  const [videoLoading, setVideoLoading] = useState<string | null>(null);
+
+  const now       = new Date();
+  const monthYear = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
   useEffect(() => {
     fetch('/api/balls-of-month')
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data?.picks)) setBom(data);
+        if (Array.isArray(data?.brands)) setBrands(data.brands);
         else if (data?.error) setFetchError(data.error);
       })
       .catch((e) => setFetchError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  async function openVideo(pick: MonthPick, index: number) {
-    const rev     = BALL_REVIEWS.find((r) => r.ballName.toLowerCase() === pick.ballName.toLowerCase());
-    const videoId = pick.youtubeId || rev?.youtubeId;
-
-    if (videoId) {
-      setVideo({ youtubeId: videoId, title: `${pick.ballName} Video` });
+  async function openVideo(pick: BrandPick, key: string) {
+    if (pick.youtubeId) {
+      setVideo({ youtubeId: pick.youtubeId, title: `${pick.ballName} Review` });
       return;
     }
-
-    // ID not cached yet — ask Claude on the fly
-    setVideoLoading(index);
+    setVideoLoading(key);
     try {
       const res  = await fetch('/api/youtube-id', {
         method:  'POST',
@@ -82,9 +156,9 @@ export function BallPickerScreen() {
       });
       const data = await res.json();
       if (data.youtubeId) {
-        setVideo({ youtubeId: data.youtubeId, title: `${pick.ballName} Video` });
+        setVideo({ youtubeId: data.youtubeId, title: `${pick.ballName} Review` });
       } else {
-        alert(`No verified video found for ${pick.ballName} yet.`);
+        alert(`No video found for ${pick.ballName} yet.`);
       }
     } finally {
       setVideoLoading(null);
@@ -93,7 +167,7 @@ export function BallPickerScreen() {
 
   return (
     <div className="pb-6">
-      <PageHeader title="Top 5 Balls" subtitle="Best balls this month" emoji="🎳" />
+      <PageHeader title="Top Balls" subtitle={`Best picks for ${monthYear}`} emoji="🎳" />
 
       {loading && (
         <div className="px-4 mt-8 text-center" style={{ color: 'var(--text-faint)' }}>
@@ -108,150 +182,55 @@ export function BallPickerScreen() {
         </div>
       )}
 
-      {!loading && !fetchError && (!bom || bom.picks.length === 0) && (
+      {!loading && !fetchError && brands.length === 0 && (
         <div className="px-4 mt-8 text-center" style={{ color: 'var(--text-faint)' }}>
           <p className="text-3xl mb-2">🎳</p>
           <p className="text-sm">No picks available yet.</p>
         </div>
       )}
 
-      {bom && bom.picks.length > 0 && (
-        <div className="px-4 space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
-              AI-curated · updated monthly
-            </p>
-            {bom.sources.length > 0 && (
-              <a
-                href={bom.sources[0]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] px-2 py-1 rounded-lg border"
-                style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
-              >
-                Sources ↗
-              </a>
-            )}
-          </div>
-
-          {bom.picks.map((pick, i) => {
-            const isOpen = open === i;
-            const isTop3 = i < 3;
-
+      {brands.length > 0 && (
+        <div className="px-4 space-y-6">
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+            AI-curated · updated monthly
+          </p>
+          {brands.map((group) => {
+            const color = BRAND_COLORS[group.brand] ?? 'var(--accent)';
             return (
-              <WoodCard
-                key={pick.ballName}
-                onClick={() => setOpen(isOpen ? null : i)}
-                className={isTop3 ? 'ring-1' : ''}
-                style={{ '--tw-ring-color': 'var(--accent)' } as React.CSSProperties}
-              >
-                {/* Collapsed row */}
-                <div className="flex items-center gap-3">
+              <div key={group.brand}>
+                {/* Brand header */}
+                <div
+                  className="flex items-center gap-2 mb-2 px-1"
+                >
                   <div
-                    className="w-14 h-14 rounded-full flex flex-col items-center justify-center flex-shrink-0 border-2"
-                    style={{
-                      background:  isTop3 ? 'var(--accent)18' : 'var(--bg-muted)',
-                      borderColor: isTop3 ? 'var(--accent)' : 'var(--border)',
-                    }}
-                  >
-                    <span className="text-2xl leading-none">{MEDALS[i]}</span>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3
-                        className="font-bold text-base truncate"
-                        style={{ color: isTop3 ? 'var(--accent)' : 'var(--text-primary)' }}
-                      >
-                        {pick.ballName}
-                      </h3>
-                      <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                        {pick.price && (
-                          <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>{pick.price}</span>
-                        )}
-                        <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{isOpen ? '▲' : '▼'}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{pick.brand}{pick.cover ? ` · ${pick.cover}` : ''}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span
-                        className="inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                        style={{
-                          background: isTop3 ? 'var(--accent)22' : 'var(--bg-deep)',
-                          color:      isTop3 ? 'var(--accent)' : 'var(--text-faint)',
-                        }}
-                      >
-                        {MEDAL_LABELS[i]}
-                      </span>
-                    </div>
-                  </div>
+                    className="w-2 h-6 rounded-full flex-shrink-0"
+                    style={{ background: color }}
+                  />
+                  <h3 className="text-base font-bold" style={{ color }}>
+                    {group.brand}
+                  </h3>
+                  <div className="flex-1 h-px" style={{ background: `${color}33` }} />
                 </div>
 
-                {/* Expanded detail */}
-                {isOpen && (
-                  <div
-                    className="mt-4 pt-4 border-t space-y-4"
-                    style={{ borderColor: 'var(--border)' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Large medal + details */}
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-20 h-20 rounded-full flex items-center justify-center text-4xl flex-shrink-0 border-4 shadow-lg"
-                        style={{ background: isTop3 ? 'var(--accent)18' : 'var(--bg-muted)', borderColor: 'var(--accent)' }}
-                      >
-                        {MEDALS[i]}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        {pick.cover && (
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{pick.cover}</p>
-                        )}
-                        {pick.lane && (
-                          <div
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg"
-                            style={{ background: 'var(--bg-muted)' }}
-                          >
-                            <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Best on:</span>
-                            <span className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>{pick.lane}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Stat bars */}
-                    {(pick.hook > 0 || pick.speed > 0) && (
-                      <div className="space-y-2">
-                        {pick.hook  > 0 && <StatBar label="Hook Potential" value={pick.hook}  color="var(--accent)" />}
-                        {pick.speed > 0 && <StatBar label="Ball Speed"     value={pick.speed} color="var(--blue)"   />}
-                      </div>
-                    )}
-
-                    {/* Reasoning */}
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                      {pick.reasoning}
-                    </p>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openVideo(pick, i)}
-                        disabled={videoLoading === i}
-                        className="flex-1 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
-                        style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}
-                      >
-                        {videoLoading === i ? 'Finding video…' : '▶ Watch Video'}
-                      </button>
-                      <button
-                        onClick={() => setOpen(null)}
-                        className="px-4 py-2.5 rounded-lg text-sm border"
-                        style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', background: 'var(--bg-muted)' }}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </WoodCard>
+                <div className="space-y-2">
+                  {group.picks.map((pick, i) => {
+                    const key = `${group.brand}-${i}`;
+                    return (
+                      <BallCard
+                        key={key}
+                        pick={pick}
+                        index={i}
+                        brandColor={color}
+                        isOpen={openKey === key}
+                        videoLoading={videoLoading === key}
+                        onOpen={() => setOpenKey(key)}
+                        onClose={() => setOpenKey(null)}
+                        onVideo={() => openVideo(pick, key)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>
