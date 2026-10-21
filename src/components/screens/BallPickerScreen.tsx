@@ -124,6 +124,7 @@ export function BallPickerScreen() {
   const [brands, setBrands]       = useState<BrandGroup[]>([]);
   const [loading, setLoading]     = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [activeBrand, setActiveBrand] = useState<string>('Storm');
   const [openKey, setOpenKey]     = useState<string | null>(null);
   const [video, setVideo]         = useState<{ youtubeId: string; title: string } | null>(null);
   const [videoLoading, setVideoLoading] = useState<string | null>(null);
@@ -135,8 +136,10 @@ export function BallPickerScreen() {
     fetch('/api/balls-of-month')
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data?.brands)) setBrands(data.brands);
-        else if (data?.error) setFetchError(data.error);
+        if (Array.isArray(data?.brands)) {
+          setBrands(data.brands);
+          if (data.brands.length > 0) setActiveBrand(data.brands[0].brand);
+        } else if (data?.error) setFetchError(data.error);
       })
       .catch((e) => setFetchError(e.message))
       .finally(() => setLoading(false));
@@ -165,6 +168,9 @@ export function BallPickerScreen() {
     }
   }
 
+  const activeGroup = brands.find((g) => g.brand === activeBrand);
+  const activeColor = BRAND_COLORS[activeBrand] ?? 'var(--accent)';
+
   return (
     <div className="pb-6">
       <PageHeader title="Top Balls" subtitle={`Best picks for ${monthYear}`} emoji="🎳" />
@@ -190,50 +196,57 @@ export function BallPickerScreen() {
       )}
 
       {brands.length > 0 && (
-        <div className="px-4 space-y-6">
-          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
-            AI-curated · updated monthly
-          </p>
-          {brands.map((group) => {
-            const color = BRAND_COLORS[group.brand] ?? 'var(--accent)';
-            return (
-              <div key={group.brand}>
-                {/* Brand header */}
-                <div
-                  className="flex items-center gap-2 mb-2 px-1"
-                >
-                  <div
-                    className="w-2 h-6 rounded-full flex-shrink-0"
-                    style={{ background: color }}
-                  />
-                  <h3 className="text-base font-bold" style={{ color }}>
+        <>
+          {/* Brand tabs */}
+          <div className="overflow-x-auto px-4 mb-4">
+            <div className="flex gap-2 min-w-max">
+              {brands.map((group) => {
+                const color    = BRAND_COLORS[group.brand] ?? 'var(--accent)';
+                const isActive = group.brand === activeBrand;
+                return (
+                  <button
+                    key={group.brand}
+                    onClick={() => { setActiveBrand(group.brand); setOpenKey(null); }}
+                    className="px-4 py-2 rounded-full text-xs font-bold transition-all"
+                    style={{
+                      background:  isActive ? color : 'var(--bg-card)',
+                      color:       isActive ? '#fff' : color,
+                      border:      `2px solid ${color}`,
+                      opacity:     isActive ? 1 : 0.7,
+                    }}
+                  >
                     {group.brand}
-                  </h3>
-                  <div className="flex-1 h-px" style={{ background: `${color}33` }} />
-                </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                <div className="space-y-2">
-                  {group.picks.map((pick, i) => {
-                    const key = `${group.brand}-${i}`;
-                    return (
-                      <BallCard
-                        key={key}
-                        pick={pick}
-                        index={i}
-                        brandColor={color}
-                        isOpen={openKey === key}
-                        videoLoading={videoLoading === key}
-                        onOpen={() => setOpenKey(key)}
-                        onClose={() => setOpenKey(null)}
-                        onVideo={() => openVideo(pick, key)}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          {/* Active brand picks */}
+          {activeGroup && (
+            <div className="px-4 space-y-2">
+              <p className="text-xs mb-3" style={{ color: 'var(--text-faint)' }}>
+                AI-curated · updated monthly
+              </p>
+              {activeGroup.picks.map((pick, i) => {
+                const key = `${activeGroup.brand}-${i}`;
+                return (
+                  <BallCard
+                    key={key}
+                    pick={pick}
+                    index={i}
+                    brandColor={activeColor}
+                    isOpen={openKey === key}
+                    videoLoading={videoLoading === key}
+                    onOpen={() => setOpenKey(key)}
+                    onClose={() => setOpenKey(null)}
+                    onVideo={() => openVideo(pick, key)}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {video && (
