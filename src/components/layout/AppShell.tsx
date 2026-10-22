@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/appStore';
 import { StatusBar } from './StatusBar';
 import { TopNav } from './TopNav';
 import { BottomTabBar } from './BottomTabBar';
+import { UpdateBanner } from '@/components/ui/UpdateBanner';
 import { BallPickerScreen } from '@/components/screens/BallPickerScreen';
 import { OilPatternScreen } from '@/components/screens/OilPatternScreen';
 import { CoachScreen } from '@/components/screens/CoachScreen';
@@ -64,6 +65,7 @@ export function AppShell() {
           {SCREENS[activeTab] ?? SCREENS.picker}
         </main>
         <BottomTabBar />
+        <UpdateBanner />
       </div>
     </div>
   );
