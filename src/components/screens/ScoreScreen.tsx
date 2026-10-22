@@ -141,9 +141,9 @@ export function ScoreScreen() {
   const [saving, setSaving]   = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Ball per frame tracking
-  const [activeBall, setActiveBall]       = useState('');
-  const [showBallPicker, setShowBallPicker] = useState(false);
+  // Ball per frame — array of 10 ball names (carries forward until changed)
+  const [ballPerFrame, setBallPerFrame]       = useState<string[]>(Array(10).fill(''));
+  const [pickingFrame, setPickingFrame]       = useState<number | null>(null);
 
   // Fixed session info
   const [bowlingAlley, setBowlingAlley] = useState(lastBowlingAlley);
@@ -175,7 +175,7 @@ export function ScoreScreen() {
     const { fi, ball } = current;
     setFrames((prev) => {
       const next = prev.map((f) => ({ ...f }));
-      const note = ball === 'ball1' && activeBall ? activeBall : next[fi].note;
+      const note = ball === 'ball1' && ballPerFrame[fi] ? ballPerFrame[fi] : next[fi].note;
       next[fi] = { ...next[fi], [ball]: value, note };
       return next;
     });
@@ -233,8 +233,8 @@ export function ScoreScreen() {
     setAddingMark('');
     setAddingNote('');
     setEditingIdx(null);
-    setActiveBall('');
-    setShowBallPicker(false);
+    setBallPerFrame(Array(10).fill(''));
+    setPickingFrame(null);
   }
 
   async function handleSave() {
@@ -348,52 +348,6 @@ export function ScoreScreen() {
             {current.ball === 'ball1' ? '1st ball' : current.ball === 'ball2' ? '2nd ball' : '3rd ball'}
           </p>
 
-          {/* Ball selector */}
-          {bagBalls.length > 0 && (
-            <div className="mb-2">
-              {!showBallPicker ? (
-                <button
-                  onClick={() => setShowBallPicker(true)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm"
-                  style={{ background: 'var(--bg-card)', borderColor: activeBall ? 'var(--accent)' : 'var(--border)', color: 'var(--text-primary)' }}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>🎳</span>
-                    <span style={{ color: activeBall ? 'var(--accent)' : 'var(--text-faint)' }}>
-                      {activeBall || 'Select ball…'}
-                    </span>
-                  </span>
-                  <span className="text-xs" style={{ color: 'var(--text-faint)' }}>Change ▼</span>
-                </button>
-              ) : (
-                <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--accent)', background: 'var(--bg-card)' }}>
-                  <p className="text-[10px] font-bold px-3 pt-2 pb-1" style={{ color: 'var(--accent)' }}>Select ball for frame {current.fi + 1}+</p>
-                  {bagBalls.map((b) => (
-                    <button
-                      key={b.id}
-                      onClick={() => { setActiveBall(`${b.ballName} (${b.brand})`); setShowBallPicker(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 border-t text-left"
-                      style={{ borderColor: 'var(--border)', background: activeBall.startsWith(b.ballName) ? 'var(--accent)22' : 'transparent' }}
-                    >
-                      <span className="text-lg">🎳</span>
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{b.ballName}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{b.brand}</p>
-                      </div>
-                      {activeBall.startsWith(b.ballName) && <span className="ml-auto text-xs" style={{ color: 'var(--accent)' }}>✓</span>}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setShowBallPicker(false)}
-                    className="w-full py-2 text-xs border-t"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
           <div className="grid grid-cols-6 gap-1.5 mb-2">
             {options.map((opt) => (
               <button key={opt} onClick={() => enter(opt)}
@@ -438,6 +392,103 @@ export function ScoreScreen() {
 
       {/* ── Game Notes ── */}
       <div className="px-3 space-y-3">
+
+        {/* Ball Per Frame */}
+        {bagBalls.length > 0 && (
+          <div className="rounded-xl border p-3 space-y-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
+              🎳 Ball Per Frame
+            </p>
+
+            {/* Frame grid */}
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: 10 }, (_, i) => {
+                const ball     = ballPerFrame[i];
+                const isActive = current?.fi === i;
+                const hasScore = frames[i].ball1 !== '';
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setPickingFrame(pickingFrame === i ? null : i)}
+                    className="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all"
+                    style={{
+                      borderColor: isActive ? 'var(--accent)' : ball ? 'var(--accent)44' : 'var(--border)',
+                      background:  isActive ? 'var(--accent)18' : ball ? 'var(--bg-deep)' : 'var(--bg-muted)',
+                      opacity:     !hasScore && !isActive ? 0.5 : 1,
+                    }}
+                  >
+                    <span className="text-[10px] font-bold" style={{ color: isActive ? 'var(--accent)' : 'var(--text-faint)' }}>
+                      F{i + 1}
+                    </span>
+                    <span className="text-[9px] text-center leading-tight font-semibold w-full truncate"
+                      style={{ color: ball ? 'var(--text-primary)' : 'var(--text-faint)' }}>
+                      {ball ? ball.split(' (')[0] : '—'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Ball picker dropdown */}
+            {pickingFrame !== null && (
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--accent)', background: 'var(--bg-deep)' }}>
+                <p className="text-[10px] font-bold px-3 pt-2 pb-1" style={{ color: 'var(--accent)' }}>
+                  Frame {pickingFrame + 1} ball — carries forward until changed
+                </p>
+                {bagBalls.map((b) => {
+                  const label   = `${b.ballName} (${b.brand})`;
+                  const current = ballPerFrame[pickingFrame];
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        setBallPerFrame((prev) => {
+                          const next = [...prev];
+                          // Fill this frame and all subsequent frames that are empty or same as old value
+                          const old = prev[pickingFrame];
+                          for (let j = pickingFrame; j < 10; j++) {
+                            if (j === pickingFrame || prev[j] === old || prev[j] === '') {
+                              next[j] = label;
+                            }
+                          }
+                          return next;
+                        });
+                        setFrames((prev) => {
+                          const next = prev.map((f) => ({ ...f }));
+                          const old  = ballPerFrame[pickingFrame];
+                          for (let j = pickingFrame; j < 10; j++) {
+                            if (j === pickingFrame || ballPerFrame[j] === old || ballPerFrame[j] === '') {
+                              if (next[j].ball1) next[j] = { ...next[j], note: label };
+                            }
+                          }
+                          return next;
+                        });
+                        setPickingFrame(null);
+                        setSaved(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 border-t text-left"
+                      style={{ borderColor: 'var(--border)', background: current === label ? 'var(--accent)22' : 'transparent' }}
+                    >
+                      <span className="text-base">🎳</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{b.ballName}</p>
+                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{b.brand}</p>
+                      </div>
+                      {current === label && <span className="text-xs flex-shrink-0" style={{ color: 'var(--accent)' }}>✓</span>}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setPickingFrame(null)}
+                  className="w-full py-2 text-xs border-t"
+                  style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Fixed session info */}
         <div className="rounded-xl border p-3 space-y-2"
