@@ -15,9 +15,21 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title:       'Lane Master',
-  description: 'AI-powered bowling coaching app',
-  manifest:    '/manifest.json',
+  title:           'Lane Master',
+  description:     'AI-powered bowling coaching app',
+  manifest:        '/manifest.json',
+  appleWebApp: {
+    capable:          true,
+    statusBarStyle:   'black-translucent',
+    title:            'Lane Master',
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
+    icon:  [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,7 +44,16 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${playfair.variable} ${nunito.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js');
+            });
+          }
+        `}} />
+      </body>
     </html>
   );
 }
