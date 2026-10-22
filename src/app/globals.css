@@ -49,7 +49,6 @@
 
 html {
   height: 100%;
-  overscroll-behavior: none;
 }
 
 body {
@@ -58,10 +57,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body), Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
   overflow: hidden;
-  /* Prevent pull-to-refresh on Chrome Android */
-  overscroll-behavior-y: none;
 }
 
 /* Allow text selection only in inputs */
