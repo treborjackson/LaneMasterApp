@@ -49,14 +49,18 @@ export function AppShell() {
   if (!token) return null;
 
   return (
-    <div className="flex justify-center items-start h-[100dvh]" style={{ background: '#0a0704' }}>
+    <div className="flex justify-center items-start" style={{ background: '#0a0704', minHeight: '100dvh' }}>
       <div
-        className="relative flex flex-col w-full max-w-[430px] h-[100dvh] overflow-hidden shadow-2xl"
-        style={{ background: 'var(--bg)' }}
+        className="relative flex flex-col w-full max-w-[430px] overflow-hidden shadow-2xl"
+        style={{
+          background:  'var(--bg)',
+          height:      '100dvh',
+          paddingTop:  'env(safe-area-inset-top)',
+        }}
       >
         <StatusBar />
         <TopNav />
-        <main className="flex-1 overflow-y-auto overscroll-contain">
+        <main className="flex-1 overflow-y-auto" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
           {SCREENS[activeTab] ?? SCREENS.picker}
         </main>
         <BottomTabBar />

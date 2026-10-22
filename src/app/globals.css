@@ -43,18 +43,43 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
-html,
+html {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
 body {
   height: 100%;
-}
-
-body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-body), Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  overflow: hidden;
+  /* Prevent pull-to-refresh on Chrome Android */
+  overscroll-behavior-y: none;
+}
+
+/* Allow text selection only in inputs */
+body * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Hide all scrollbars — app uses custom scroll areas */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
 }
 
 .scrollbar-hide::-webkit-scrollbar {

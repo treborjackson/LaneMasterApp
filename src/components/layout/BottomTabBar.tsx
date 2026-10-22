@@ -19,11 +19,10 @@ export function BottomTabBar() {
     <nav
       className="border-t flex-shrink-0 overflow-x-auto"
       style={{
-        background: 'var(--bg-deep)',
-        borderColor: 'var(--border)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
+        background:    'var(--bg-deep)',
+        borderColor:   'var(--border)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
         scrollbarWidth: 'none',
-        WebkitOverflowScrolling: 'touch',
       }}
     >
       <div className="flex items-center min-w-max px-1">
