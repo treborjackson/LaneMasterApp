@@ -118,6 +118,7 @@ function BallBox({ value, active }: { value: string; active: boolean }) {
 
 interface Adjustment {
   frame: number;
+  ball:  string;
   board: string;
   mark:  string;
   note:  string;
@@ -156,10 +157,12 @@ export function ScoreScreen() {
 
   // Board & mark tracking
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [addingBall,  setAddingBall]   = useState('');
   const [addingBoard, setAddingBoard]  = useState('');
   const [addingMark,  setAddingMark]   = useState('');
   const [addingNote,  setAddingNote]   = useState('');
   const [editingIdx,  setEditingIdx]   = useState<number | null>(null);
+  const [editBall,    setEditBall]     = useState('');
   const [editBoard,   setEditBoard]    = useState('');
   const [editMark,    setEditMark]     = useState('');
   const [editNote,    setEditNote]     = useState('');
@@ -196,19 +199,24 @@ export function ScoreScreen() {
     setSaved(false);
   }
 
+  // Last used ball — carries forward like mark tracking
+  const lastBall = [...adjustments].reverse().find((a) => a.ball)?.ball ?? '';
+
   function logAdjustment() {
-    if (!addingBoard.trim() && !addingMark.trim() && !addingNote.trim()) return;
+    if (!addingBall && !addingBoard.trim() && !addingMark.trim() && !addingNote.trim()) return;
     setAdjustments((prev) => [
       ...prev,
-      { frame: currentFrame, board: addingBoard.trim(), mark: addingMark.trim(), note: addingNote.trim() },
+      { frame: currentFrame, ball: addingBall, board: addingBoard.trim(), mark: addingMark.trim(), note: addingNote.trim() },
     ]);
     setAddingBoard('');
     setAddingMark('');
     setAddingNote('');
+    // keep addingBall so it carries forward
   }
 
   function startEdit(idx: number) {
     setEditingIdx(idx);
+    setEditBall(adjustments[idx].ball ?? '');
     setEditBoard(adjustments[idx].board);
     setEditMark(adjustments[idx].mark);
     setEditNote(adjustments[idx].note ?? '');
@@ -217,7 +225,7 @@ export function ScoreScreen() {
   function saveEdit() {
     if (editingIdx === null) return;
     setAdjustments((prev) =>
-      prev.map((a, i) => i === editingIdx ? { ...a, board: editBoard.trim(), mark: editMark.trim(), note: editNote.trim() } : a)
+      prev.map((a, i) => i === editingIdx ? { ...a, ball: editBall, board: editBoard.trim(), mark: editMark.trim(), note: editNote.trim() } : a)
     );
     setEditingIdx(null);
   }
@@ -229,6 +237,7 @@ export function ScoreScreen() {
     setStartBoard('');
     setStartMark('');
     setAdjustments([]);
+    setAddingBall('');
     setAddingBoard('');
     setAddingMark('');
     setAddingNote('');
@@ -249,7 +258,7 @@ export function ScoreScreen() {
       : '';
     const boardLog = [
       startLine,
-      ...adjustments.map((a) => `Frame ${a.frame}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · ${a.mark}` : ''}${a.note ? ` · ${a.note}` : ''}`),
+      ...adjustments.map((a) => `Frame ${a.frame}${a.ball ? ` · Ball: ${a.ball}` : ''}${a.board ? ` · Board ${a.board}` : ''}${a.mark ? ` · ${a.mark}` : ''}${a.note ? ` · ${a.note}` : ''}`),
     ].filter(Boolean).join(' | ');
 
     try {
@@ -393,103 +402,6 @@ export function ScoreScreen() {
       {/* ── Game Notes ── */}
       <div className="px-3 space-y-3">
 
-        {/* Ball Per Frame */}
-        {bagBalls.length > 0 && (
-          <div className="rounded-xl border p-3 space-y-3" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
-              🎳 Ball Per Frame
-            </p>
-
-            {/* Frame grid */}
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 10 }, (_, i) => {
-                const ball     = ballPerFrame[i];
-                const isActive = current?.fi === i;
-                const hasScore = frames[i].ball1 !== '';
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setPickingFrame(pickingFrame === i ? null : i)}
-                    className="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all"
-                    style={{
-                      borderColor: isActive ? 'var(--accent)' : ball ? 'var(--accent)44' : 'var(--border)',
-                      background:  isActive ? 'var(--accent)18' : ball ? 'var(--bg-deep)' : 'var(--bg-muted)',
-                      opacity:     !hasScore && !isActive ? 0.5 : 1,
-                    }}
-                  >
-                    <span className="text-[10px] font-bold" style={{ color: isActive ? 'var(--accent)' : 'var(--text-faint)' }}>
-                      F{i + 1}
-                    </span>
-                    <span className="text-[9px] text-center leading-tight font-semibold w-full truncate"
-                      style={{ color: ball ? 'var(--text-primary)' : 'var(--text-faint)' }}>
-                      {ball ? ball.split(' (')[0] : '—'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Ball picker dropdown */}
-            {pickingFrame !== null && (
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--accent)', background: 'var(--bg-deep)' }}>
-                <p className="text-[10px] font-bold px-3 pt-2 pb-1" style={{ color: 'var(--accent)' }}>
-                  Frame {pickingFrame + 1} ball — carries forward until changed
-                </p>
-                {bagBalls.map((b) => {
-                  const label   = `${b.ballName} (${b.brand})`;
-                  const current = ballPerFrame[pickingFrame];
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => {
-                        setBallPerFrame((prev) => {
-                          const next = [...prev];
-                          // Fill this frame and all subsequent frames that are empty or same as old value
-                          const old = prev[pickingFrame];
-                          for (let j = pickingFrame; j < 10; j++) {
-                            if (j === pickingFrame || prev[j] === old || prev[j] === '') {
-                              next[j] = label;
-                            }
-                          }
-                          return next;
-                        });
-                        setFrames((prev) => {
-                          const next = prev.map((f) => ({ ...f }));
-                          const old  = ballPerFrame[pickingFrame];
-                          for (let j = pickingFrame; j < 10; j++) {
-                            if (j === pickingFrame || ballPerFrame[j] === old || ballPerFrame[j] === '') {
-                              if (next[j].ball1) next[j] = { ...next[j], note: label };
-                            }
-                          }
-                          return next;
-                        });
-                        setPickingFrame(null);
-                        setSaved(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 border-t text-left"
-                      style={{ borderColor: 'var(--border)', background: current === label ? 'var(--accent)22' : 'transparent' }}
-                    >
-                      <span className="text-base">🎳</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{b.ballName}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{b.brand}</p>
-                      </div>
-                      {current === label && <span className="text-xs flex-shrink-0" style={{ color: 'var(--accent)' }}>✓</span>}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setPickingFrame(null)}
-                  className="w-full py-2 text-xs border-t"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Fixed session info */}
         <div className="rounded-xl border p-3 space-y-2"
           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
@@ -563,6 +475,19 @@ export function ScoreScreen() {
                     style={{ background: 'var(--accent)22', color: 'var(--accent)' }}>
                     Frame {adj.frame}
                   </span>
+                  {bagBalls.length > 0 && (
+                    <div>
+                      <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>🎳 Ball Used</p>
+                      <select value={editBall} onChange={(e) => setEditBall(e.target.value)}
+                        className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                        style={{ background: 'var(--bg-card)', borderColor: 'var(--accent)', color: 'var(--text-primary)' }}>
+                        <option value="">— Select ball —</option>
+                        {bagBalls.map((b) => (
+                          <option key={b.id} value={`${b.ballName} (${b.brand})`}>{b.ballName} — {b.brand}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
@@ -602,8 +527,11 @@ export function ScoreScreen() {
                     Frame {adj.frame}
                   </span>
                   <div className="flex-1 min-w-0">
+                    {adj.ball && (
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--accent)' }}>🎳 {adj.ball.split(' (')[0]}</p>
+                    )}
                     <p className="text-xs" style={{ color: 'var(--text-primary)' }}>
-                      {[adj.board ? `Standing On: ${adj.board}` : '', adj.mark ? `Mark: ${adj.mark}` : ''].filter(Boolean).join(' · ')}
+                      {[adj.board ? `Board: ${adj.board}` : '', adj.mark ? `Mark: ${adj.mark}` : ''].filter(Boolean).join(' · ')}
                     </p>
                     {adj.note && (
                       <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-faint)' }}>{adj.note}</p>
@@ -634,6 +562,19 @@ export function ScoreScreen() {
                 from scoreboard
               </span>
             </div>
+            {bagBalls.length > 0 && (
+              <div>
+                <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>🎳 Ball Used</p>
+                <select value={addingBall} onChange={(e) => setAddingBall(e.target.value)}
+                  className="w-full px-2 py-1.5 rounded-lg text-sm border outline-none"
+                  style={{ background: 'var(--bg-card)', borderColor: addingBall ? 'var(--accent)' : 'var(--border)', color: addingBall ? 'var(--text-primary)' : 'var(--text-faint)' }}>
+                  <option value="">{lastBall ? `↑ Continuing: ${lastBall.split(' (')[0]}` : '— Select ball —'}</option>
+                  {bagBalls.map((b) => (
+                    <option key={b.id} value={`${b.ballName} (${b.brand})`}>{b.ballName} — {b.brand}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <p className="text-[10px] mb-1" style={{ color: 'var(--text-faint)' }}>Standing On</p>
@@ -652,7 +593,7 @@ export function ScoreScreen() {
                 style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
             </div>
             <button onClick={logAdjustment}
-              disabled={!addingBoard.trim() && !addingMark.trim() && !addingNote.trim()}
+              disabled={!addingBall && !addingBoard.trim() && !addingMark.trim() && !addingNote.trim()}
               className="w-full py-2 rounded-lg text-sm font-bold disabled:opacity-40"
               style={{ background: 'var(--accent)', color: 'var(--bg-deep)' }}>
               + Add Frame {currentFrame} Adjustment
